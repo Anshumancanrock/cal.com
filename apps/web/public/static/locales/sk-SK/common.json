@@ -10,6 +10,8 @@
   "accept_invitation": "Prijať pozvánku",
   "max_characters": "Max. znakov",
   "min_characters": "Min. znakov",
+  "min_characters_required": "Min. {{count}} znakov potrebných",
+  "max_characters_allowed": "Max. {{count}} znakov povolených",
   "calcom_explained": "{{appName}} poskytuje plánovaciu infraštruktúru pre každého.",
   "calcom_explained_new_user": "Dokončite nastavenie svojho účtu {{appName}}! Ste len pár krokov od vyriešenia všetkých vašich problémov s plánovaním.",
   "have_any_questions": "Máte otázky? Sme tu, aby sme vám pomohli.",

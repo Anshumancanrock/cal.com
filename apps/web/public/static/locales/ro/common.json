@@ -10,6 +10,8 @@
   "accept_invitation": "Acceptați invitația",
   "max_characters": "Max. caractere",
   "min_characters": "Min. caractere",
+  "min_characters_required": "Min. {{count}} caractere necesare",
+  "max_characters_allowed": "Max. {{count}} caractere permise",
   "calcom_explained": "{{appName}} oferă infrastructura de programare pentru absolut toată lumea.",
   "calcom_explained_new_user": "Finalizați configurarea contului dvs. {{appName}}! Sunteți la doar câțiva pași de a rezolva toate problemele de programare.",
   "have_any_questions": "Aveți întrebări? Suntem aici pentru a vă ajuta.",

@@ -10,6 +10,8 @@
   "accept_invitation": "Acceptér Invitation",
   "max_characters": "Maks. tegn",
   "min_characters": "Min. tegn",
+  "min_characters_required": "Min. {{count}} tegn påkrævet",
+  "max_characters_allowed": "Maks. {{count}} tegn tilladt",
   "calcom_explained": "{{appName}} leverer planlægningsinfrastruktur for absolut alle.",
   "calcom_explained_new_user": "Færdiggør opsætningen af din {{appName}}-konto! Du er kun få trin fra at løse alle dine planlægningsproblemer.",
   "have_any_questions": "Har du spørgsmål? Vi er her for at hjælpe.",

@@ -10,6 +10,8 @@
   "accept_invitation": "Aksepter invitasjon",
   "max_characters": "Maks. tegn",
   "min_characters": "Min. tegn",
+  "min_characters_required": "Min. {{count}} tegn påkrevd",
+  "max_characters_allowed": "Maks. {{count}} tegn tillatt",
   "calcom_explained": "{{appName}} er en åpen kildekodeversjon av Calendly som gir deg kontroll over dine egne data, arbeidsflyt og utseende.",
   "calcom_explained_new_user": "Fullfør oppsettet av din {{appName}}-konto! Du er bare noen få steg unna å løse alle dine planleggingsproblemer.",
   "have_any_questions": "Har du spørsmål? Vi er her for å hjelpe.",

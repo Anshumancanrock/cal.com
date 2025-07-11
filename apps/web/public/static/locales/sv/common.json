@@ -10,6 +10,8 @@
   "accept_invitation": "Acceptera inbjudan",
   "max_characters": "Max. tecken",
   "min_characters": "Min. tecken",
+  "min_characters_required": "Min. {{count}} tecken krävs",
+  "max_characters_allowed": "Max. {{count}} tecken tillåtet",
   "calcom_explained": "{{appName}} erbjuder en infrastruktur för schemaläggning för alla.",
   "calcom_explained_new_user": "Slutför konfigurationen av ditt {{appName}}-konto! Du är bara några steg från att lösa alla dina schemaläggningsproblem.",
   "have_any_questions": "Har du frågor? Vi är här för att hjälpa till.",

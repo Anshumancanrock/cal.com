@@ -10,6 +10,8 @@
   "accept_invitation": "Přijmout pozvánku",
   "max_characters": "Max. znaků",
   "min_characters": "Min. znaků",
+  "min_characters_required": "Min. {{count}} znaků vyžadováno",
+  "max_characters_allowed": "Max. {{count}} znaků povoleno",
   "calcom_explained": "{{appName}} je open source alternativa, která vám dává kontrolu nad vlastními daty, workflow a vzhledem.",
   "calcom_explained_new_user": "Dokončete nastavení svého účtu {{appName}}! Jste jen několik kroků od vyřešení všech vašich problémů s plánováním.",
   "have_any_questions": "Máte otázky? Jsme tu, abychom vám pomohli.",

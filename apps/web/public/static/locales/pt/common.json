@@ -10,6 +10,8 @@
   "accept_invitation": "Aceitar convite",
   "max_characters": "Máx. Caracteres",
   "min_characters": "Mín. Caracteres",
+  "min_characters_required": "Mín. {{count}} caracteres obrigatórios",
+  "max_characters_allowed": "Máx. {{count}} caracteres permitidos",
   "calcom_explained": "{{appName}} é a alternativa de código aberto de Calendly que lhe dá o controlo dos seus próprios dados, do seu fluxo de trabalho e da apresentação.",
   "calcom_explained_new_user": "Conclua a configuração da sua conta {{appName}}! Está a poucos passos de resolver todos os seus problemas de agendamento.",
   "have_any_questions": "Tem perguntas? Estamos disponíveis para ajudar.",

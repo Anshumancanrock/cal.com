@@ -10,6 +10,8 @@
   "accept_invitation": "Принять приглашение",
   "max_characters": "Макс. символов",
   "min_characters": "Мин. символов",
+  "min_characters_required": "Мин. {{count}} символов требуется",
+  "max_characters_allowed": "Макс. {{count}} символов разрешено",
   "calcom_explained": "{{appName}} предоставляет инфраструктуру для планирования событий для каждого.",
   "calcom_explained_new_user": "Завершите настройку вашего аккаунта {{appName}}! Вы всего в нескольких шагах от решения всех проблем с планированием.",
   "have_any_questions": "Есть вопросы? Мы здесь, чтобы помочь.",

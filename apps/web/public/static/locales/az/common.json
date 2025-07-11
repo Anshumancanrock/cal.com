@@ -10,6 +10,8 @@
   "accept_invitation": "Dəvəti qəbul edin",
   "max_characters": "Maks. Simvollar",
   "min_characters": "Min. Simvollar",
+  "min_characters_required": "Min. {{count}} simvol tələb olunur",
+  "max_characters_allowed": "Maks. {{count}} simvol icazə verilir",
   "calcom_explained": "{{appName}} hər kəs üçün planlaşdırma infrastrukturu təmin edir.",
   "calcom_explained_new_user": "{{appName}} hesabınızın qurulmasını tamamlayın! Bütün planlaşdırma problemlərinizi həll etməyə bir neçə addım qalmışdır.",
   "have_any_questions": "Suallarınız var? Biz kömək etmək üçün buradayıq.",

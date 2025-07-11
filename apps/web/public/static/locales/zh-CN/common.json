@@ -10,6 +10,8 @@
   "accept_invitation": "接受邀请",
   "max_characters": "最大字符数",
   "min_characters": "最小字符数",
+  "min_characters_required": "至少需要 {{count}} 个字符",
+  "max_characters_allowed": "最多允许 {{count}} 个字符",
   "calcom_explained": "{{appName}} 绝对为每个人提供日程安排基础设施。",
   "calcom_explained_new_user": "完成设置您的 {{appName}} 账户！只需几个步骤，您就能解决所有的日程安排问题。",
   "have_any_questions": "有疑问？获取我们的帮助。",

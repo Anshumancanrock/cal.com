@@ -10,6 +10,8 @@
   "accept_invitation": "Приемане на покана",
   "max_characters": "Макс. символи",
   "min_characters": "Мин. символи",
+  "min_characters_required": "Мин. {{count}} символа изискани",
+  "max_characters_allowed": "Макс. {{count}} символа разрешени",
   "calcom_explained": "{{appName}} предоставя инфраструктура за планиране за абсолютно всички.",
   "calcom_explained_new_user": "Завършете настройката на вашия {{appName}} акаунт! Само на няколко стъпки сте от решаването на всичките си проблеми с планирането.",
   "have_any_questions": "Имате въпроси? Ние сме тук, за да ви помогнем.",

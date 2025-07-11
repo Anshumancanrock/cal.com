@@ -10,6 +10,8 @@
   "accept_invitation": "اقبل الدعوة",
   "max_characters": "الحد الأقصى لعدد الأحرف",
   "min_characters": "الحد الأدنى لعدد الأحرف",
+  "min_characters_required": "مطلوب حد أدنى {{count}} حرف",
+  "max_characters_allowed": "مسموح حد أقصى {{count}} حرف",
   "calcom_explained": "يوفر {{appName}} بنية أساسية للجدولة للجميع.",
   "calcom_explained_new_user": "أكمل إعداد حسابك على {{appName}}! أنت على بعد خطوات قليلة من حل جميع مشاكل جدولة مواعيدك.",
   "have_any_questions": "هل لديك أسئلة؟ نحن هنا للمساعدة.",

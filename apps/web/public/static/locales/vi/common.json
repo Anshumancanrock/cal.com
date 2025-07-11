@@ -10,6 +10,8 @@
   "accept_invitation": "Chấp Nhận Lời Mời",
   "max_characters": "Số ký tự tối đa",
   "min_characters": "Số ký tự tối thiểu",
+  "min_characters_required": "Tối thiểu {{count}} ký tự bắt buộc",
+  "max_characters_allowed": "Tối đa {{count}} ký tự được phép",
   "calcom_explained": "{{appName}} là Calendly mã nguồn mở, giúp bạn quản lý dữ liệu, ngoại hình và cách làm việc của mình.",
   "calcom_explained_new_user": "Hoàn tất thiết lập tài khoản {{appName}} của bạn! Bạn chỉ còn vài bước nữa là sẽ giải quyết được tất cả các vấn đề về lập lịch.",
   "have_any_questions": "Có câu hỏi? Chúng tôi luôn ở đây để giúp bạn.",

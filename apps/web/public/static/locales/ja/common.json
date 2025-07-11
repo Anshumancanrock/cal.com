@@ -10,6 +10,8 @@
   "accept_invitation": "招待を受け入れる",
   "max_characters": "最大文字数",
   "min_characters": "最小文字数",
+  "min_characters_required": "最低 {{count}} 文字必要",
+  "max_characters_allowed": "最大 {{count}} 文字まで許可",
   "calcom_explained": "{{appName}} は、すべての人が使えるスケジュール管理インフラを提供します。",
   "calcom_explained_new_user": "{{appName}}アカウントの設定を完了してください！あと数ステップで、すべてのスケジューリングの問題を解決できます。",
   "have_any_questions": "ご不明な点があれば、お気軽にお問い合わせください。",

@@ -10,6 +10,8 @@
   "accept_invitation": "אישור הזמנה",
   "max_characters": "מקסימום תווים",
   "min_characters": "מינימום תווים",
+  "min_characters_required": "נדרשים לפחות {{count}} תווים",
+  "max_characters_allowed": "מותרים לכל היותר {{count}} תווים",
   "calcom_explained": "{{appName}} מספקת תשתית ליצירת לוחות זמנים שתתאים לכולם.",
   "calcom_explained_new_user": "סיים את הגדרת חשבון ה-{{appName}} שלך! אתה במרחק כמה צעדים בלבד מפתרון כל בעיות התזמון שלך.",
   "have_any_questions": "יש לך שאלות? אנחנו כאן כדי לעזור.",

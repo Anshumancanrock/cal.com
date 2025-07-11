@@ -10,6 +10,8 @@
   "accept_invitation": "초대 수락",
   "max_characters": "최대 문자 수",
   "min_characters": "최소 문자 수",
+  "min_characters_required": "최소 {{count}}자 필요",
+  "max_characters_allowed": "최대 {{count}}자 허용",
   "calcom_explained": "{{appName}}은(는) 모든 사람을 위한 일정 관리 인프라를 제공합니다.",
   "calcom_explained_new_user": "{{appName}} 계정 설정을 완료하세요! 모든 일정 관리 문제를 해결하는 데 몇 단계만 남았습니다.",
   "have_any_questions": "질문이 있나요? 도와드릴게요.",

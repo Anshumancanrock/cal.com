@@ -10,6 +10,8 @@
   "accept_invitation": "Meghívó elfogadása",
   "max_characters": "Max. karakterek",
   "min_characters": "Min. karakterek",
+  "min_characters_required": "Min. {{count}} karakter szükséges",
+  "max_characters_allowed": "Max. {{count}} karakter engedélyezett",
   "calcom_explained": "{{appName}} időpont-egyeztető infrastruktúrát biztosít mindenki számára.",
   "calcom_explained_new_user": "Fejezze be {{appName}} fiókjának beállítását! Már csak néhány lépésre van attól, hogy megoldja minden ütemezési problémáját.",
   "have_any_questions": "Van kérdésed? Itt vagyunk hogy segítsünk.",

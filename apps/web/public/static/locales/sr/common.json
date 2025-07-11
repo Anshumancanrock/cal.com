@@ -10,6 +10,8 @@
   "accept_invitation": "Prihvati poziv",
   "max_characters": "Maks. karaktera",
   "min_characters": "Min. karaktera",
+  "min_characters_required": "Мин. {{count}} карактера потребно",
+  "max_characters_allowed": "Макс. {{count}} карактера дозвољено",
   "calcom_explained": "{{appName}} pruža infrastrukturu za zakazivanje apsolutno svima.",
   "calcom_explained_new_user": "Završite podešavanje svog {{appName}} naloga! Samo nekoliko koraka vas deli od rešavanja svih problema sa zakazivanjem.",
   "have_any_questions": "Imate pitanja? Tu smo da pomognemo.",

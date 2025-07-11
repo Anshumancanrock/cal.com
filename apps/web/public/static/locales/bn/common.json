@@ -9,6 +9,8 @@
   "accept_invitation": "আমন্ত্রণ গ্রহণ করুন",
   "max_characters": "সর্বোচ্চ ",
   "min_characters": "মিনিট ",
+  "min_characters_required": "সর্বনিম্ন {{count}} অক্ষর প্রয়োজন",
+  "max_characters_allowed": "সর্বোচ্চ {{count}} অক্ষর অনুমোদিত",
   "calcom_explained": "{{appName}} একেবারে প্রত্যেকের জন্য সময়সূচী অবকাঠামো সরবরাহ করে।",
   "calcom_explained_new_user": "আপনার সেট আপ শেষ {{appName}} হিসাব! ",
   "have_any_questions": "প্রশ্ন আছে? ",

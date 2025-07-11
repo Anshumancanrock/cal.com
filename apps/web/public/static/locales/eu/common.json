@@ -10,6 +10,8 @@
   "accept_invitation": "Onartu gonbidapena",
   "max_characters": "Gehienezko karaktereak",
   "min_characters": "Gutxieneko karaktereak",
+  "min_characters_required": "Min. {{count}} karaktere beharrezkoak",
+  "max_characters_allowed": "Geh. {{count}} karaktere baimenduta",
   "calcom_explained": "{{appName}}-ek bilerak programatzeko azpiegitura eskaintzen du guztiontzat.",
   "calcom_explained_new_user": "Amaitu zure {{appName}} kontuaren konfigurazioa! Urrats gutxi batzuk besterik ez dituzu zure hitzordu-arazo guztiak konpontzeko.",
   "have_any_questions": "Galderarik? Laguntzeko gaude.",

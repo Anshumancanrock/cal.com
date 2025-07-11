@@ -10,6 +10,8 @@
   "accept_invitation": "Aceptar invitación",
   "max_characters": "Máx. caracteres",
   "min_characters": "Mín. caracteres",
+  "min_characters_required": "Mín. {{count}} caracteres requeridos",
+  "max_characters_allowed": "Máx. {{count}} caracteres permitidos",
   "calcom_explained": "{{appName}} proporciona infraestructura de programación para absolutamente todos.",
   "calcom_explained_new_user": "¡Termina de configurar tu cuenta de {{appName}}! Estás a solo unos pasos de resolver todos tus problemas de programación.",
   "have_any_questions": "¿Tienes preguntas? Estamos aquí para ayudarte.",

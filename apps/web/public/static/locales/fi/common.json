@@ -10,6 +10,8 @@
   "accept_invitation": "Hyväksy Kutsu",
   "max_characters": "Enimmäismerkkimäärä",
   "min_characters": "Vähimmäismerkkimäärä",
+  "min_characters_required": "Vähintään {{count}} merkkiä vaaditaan",
+  "max_characters_allowed": "Enintään {{count}} merkkiä sallittu",
   "calcom_explained": "{{appName}} tarjoaa aikataulutusinfrastruktuurin aivan kaikille.",
   "calcom_explained_new_user": "Viimeistele {{appName}}-tilisi asetukset! Olet vain muutaman askeleen päässä kaikkien aikatauluongelmien ratkaisemisesta.",
   "have_any_questions": "Onko kysyttävää? Olemme täällä auttamassa.",

@@ -10,6 +10,8 @@
   "accept_invitation": "Võta kutse vastu",
   "max_characters": "Maks. tähemärgid",
   "min_characters": "Min. tähemärgid",
+  "min_characters_required": "Min. {{count}} tähemärki nõutud",
+  "max_characters_allowed": "Maks. {{count}} tähemärki lubatud",
   "calcom_explained": "{{appName}} pakub ajaplaneerimise infrastruktuuri absoluutselt kõigile.",
   "calcom_explained_new_user": "Lõpetage oma {{appName}} konto seadistamine! Olete vaid mõne sammu kaugusel kõigi oma planeerimisprobleemide lahendamisest.",
   "have_any_questions": "Kas teil on küsimusi? Oleme siin, et aidata.",

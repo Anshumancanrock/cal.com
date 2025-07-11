@@ -10,6 +10,8 @@
   "accept_invitation": "Daveti Kabul Et",
   "max_characters": "Maks. Karakter",
   "min_characters": "Min. Karakter",
+  "min_characters_required": "En az {{count}} karakter gerekli",
+  "max_characters_allowed": "En fazla {{count}} karakter izinli",
   "calcom_explained": "{{appName}}, kendi verilerinizin, iş akışınızın ve web görünümünüzün kontrolünü size veren açık kaynaklı Calendly uygulamasının alternatifidir.",
   "calcom_explained_new_user": "{{appName}} hesabınızın kurulumunu tamamlayın! Tüm planlama sorunlarınızı çözmekten sadece birkaç adım uzaktasınız.",
   "have_any_questions": "Sorularınız mı var? Size yardımcı olmak için buradayız.",

@@ -10,6 +10,8 @@
   "accept_invitation": "ទទួលយកការអញ្ជើញ",
   "max_characters": "អក្សរច្រើនបំផុត",
   "min_characters": "អក្សរតិចបំផុត",
+  "min_characters_required": "តម្រូវឱ្យមានអក្សរយ៉ាងតិច {{count}}",
+  "max_characters_allowed": "អនុញ្ញាតអក្សរអតិបរមា {{count}}",
   "calcom_explained": "{{appName}} ផ្តល់ហេដ្ឋារចនាសម្ព័ន្ធកំណត់ពេលសម្រាប់មនុស្សគ្រប់គ្នា។",
   "calcom_explained_new_user": "បញ្ចប់ការរៀបចំគណនី {{appName}} របស់អ្នក! អ្នកនៅសល់តែពីរបីជំហានទៀតប៉ុណ្ណោះដើម្បីដោះស្រាយបញ្ហាកាលវិភាគទាំងអស់របស់អ្នក។",
   "have_any_questions": "អ្នកមានសំណួរឬ? យើងនៅទីនេះដើម្បីជួយ។",

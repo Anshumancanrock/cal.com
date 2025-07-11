@@ -10,6 +10,8 @@
   "accept_invitation": "Uitnodiging accepteren",
   "max_characters": "Max. Karakters",
   "min_characters": "Min. Karakters",
+  "min_characters_required": "Min. {{count}} karakters vereist",
+  "max_characters_allowed": "Max. {{count}} karakters toegestaan",
   "calcom_explained": "{{appName}} is het open source Calendly-alternatief waarmee u uw eigen gegevens, werkstroom en uiterlijk in de hand houdt.",
   "calcom_explained_new_user": "Voltooi de instelling van uw {{appName}}-account! U bent nog maar een paar stappen verwijderd van het oplossen van al uw planningsproblemen.",
   "have_any_questions": "Heeft u vragen? We zijn er om te helpen.",

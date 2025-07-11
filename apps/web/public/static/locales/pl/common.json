@@ -10,6 +10,8 @@
   "accept_invitation": "Akceptuj zaproszenie",
   "max_characters": "Maks. znaków",
   "min_characters": "Min. znaków",
+  "min_characters_required": "Min. {{count}} znaków wymagane",
+  "max_characters_allowed": "Maks. {{count}} znaków dozwolone",
   "calcom_explained": "{{appName}} zapewnia infrastrukturę planowania dla absolutnie wszystkich.",
   "calcom_explained_new_user": "Dokończ konfigurację swojego konta {{appName}}! Dzieli Cię tylko kilka kroków od rozwiązania wszystkich problemów z planowaniem.",
   "have_any_questions": "Masz pytania? Jesteśmy tutaj, aby pomóc.",
