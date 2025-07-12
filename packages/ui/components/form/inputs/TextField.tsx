@@ -83,7 +83,7 @@ const Addon = ({ children, className, error, onClickAddon, size = "md", position
       onClickAddon && "pointer-events-auto cursor-pointer disabled:hover:cursor-not-allowed",
       className
     )}>
-    <Tooltip content={typeof children === "string" ? children : undefined}>
+    <Tooltip content={typeof children === "string" ? children : undefined} delayDuration={1000}>
       <span
         className={classNames(
           "truncate text-sm font-medium leading-none",

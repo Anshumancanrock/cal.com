@@ -200,7 +200,9 @@ const PremiumTextfield = (props: ICustomUsernameProps) => {
         <Label htmlFor="username">{t("username")}</Label>
       </div>
       <div className="flex rounded-md">
-        <Tooltip content={process.env.NEXT_PUBLIC_WEBSITE_URL.replace("https://", "").replace("http://", "")}>
+        <Tooltip
+          content={process.env.NEXT_PUBLIC_WEBSITE_URL.replace("https://", "").replace("http://", "")}
+          delayDuration={1000}>
           <span
             className={classNames(
               isInputUsernamePremium ? "border border-orange-400 " : "",
