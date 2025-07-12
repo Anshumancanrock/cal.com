@@ -78,13 +78,14 @@ const Addon = ({ children, className, error, onClickAddon, size = "md", position
   <div
     onClick={onClickAddon && onClickAddon}
     className={classNames(
-      "flex flex-shrink-0 items-center justify-center whitespace-nowrap",
+      "flex flex-shrink-0 items-center justify-center max-w-32",
       onClickAddon && "pointer-events-auto cursor-pointer disabled:hover:cursor-not-allowed",
       className
-    )}>
+    )}
+    title={typeof children === 'string' ? children : undefined}>
     <span
       className={classNames(
-        "text-sm font-medium leading-none",
+        "text-sm font-medium leading-none truncate",
         error ? "text-error" : "text-muted peer-disabled:opacity-50"
       )}>
       {children}

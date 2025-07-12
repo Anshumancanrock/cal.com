@@ -202,8 +202,9 @@ const PremiumTextfield = (props: ICustomUsernameProps) => {
         <span
           className={classNames(
             isInputUsernamePremium ? "border border-orange-400 " : "",
-            "border-default bg-muted text-subtle hidden h-8 items-center rounded-l-md border border-r-0 px-3 text-sm md:inline-flex"
-          )}>
+            "border-default bg-muted text-subtle hidden h-8 items-center rounded-l-md border border-r-0 px-3 text-sm md:inline-flex max-w-32 truncate"
+          )}
+          title={process.env.NEXT_PUBLIC_WEBSITE_URL.replace("https://", "").replace("http://", "")}>
           {process.env.NEXT_PUBLIC_WEBSITE_URL.replace("https://", "").replace("http://", "")}/
         </span>
 
