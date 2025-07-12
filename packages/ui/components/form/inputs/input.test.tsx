@@ -30,33 +30,27 @@ describe("Tests for InputField Component", () => {
   });
 
   it("should render with addOnLeading prop", () => {
-    const { getByText } = render(
-      <TooltipProvider>
-        <InputField addOnLeading={<span>Leading</span>} />
-      </TooltipProvider>
-    );
+    const { getByText } = render(<InputField addOnLeading={<span>Leading</span>} />);
+
     const addOnLeadingElement = getByText("Leading");
     expect(addOnLeadingElement).toBeInTheDocument();
   });
 
   it("should render with addOnSuffix prop", () => {
-    const { getByText } = render(
-      <TooltipProvider>
-        <InputField addOnSuffix={<span>Suffix</span>} />
-      </TooltipProvider>
-    );
+    const { getByText } = render(<InputField addOnSuffix={<span>Suffix</span>} />);
+
     const addOnSuffixElement = getByText("Suffix");
     expect(addOnSuffixElement).toBeInTheDocument();
   });
 
   it("should display both addOnLeading and addOnSuffix", () => {
     const { getByText } = render(
-      <TooltipProvider>
-        <InputField addOnLeading={<span>Leading</span>} addOnSuffix={<span>Suffix</span>} />
-      </TooltipProvider>
+      <InputField addOnLeading={<span>Leading</span>} addOnSuffix={<span>Suffix</span>} />
     );
+
     const addOnLeadingElement = getByText("Leading");
     const addOnSuffixElement = getByText("Suffix");
+
     expect(addOnLeadingElement).toBeInTheDocument();
     expect(addOnSuffixElement).toBeInTheDocument();
   });
