@@ -83,18 +83,8 @@ const Addon = ({ children, className, error, onClickAddon, size = "md", position
       onClickAddon && "pointer-events-auto cursor-pointer disabled:hover:cursor-not-allowed",
       className
     )}>
-    {/* If TooltipProvider is present, use Tooltip. Otherwise, fallback to plain span for test environments. */}
-    {typeof window !== "undefined" && window?.__TooltipProvider__ ? (
-      <Tooltip content={typeof children === "string" ? children : undefined} delayDuration={1000}>
-        <span
-          className={classNames(
-            "truncate text-sm font-medium leading-none",
-            error ? "text-error" : "text-muted peer-disabled:opacity-50"
-          )}>
-          {children}
-        </span>
-      </Tooltip>
-    ) : (
+    {/* Tooltip always rendered; tests must wrap with TooltipProvider if needed. */}
+    <Tooltip content={typeof children === "string" ? children : undefined} delayDuration={1000}>
       <span
         className={classNames(
           "truncate text-sm font-medium leading-none",
@@ -102,7 +92,7 @@ const Addon = ({ children, className, error, onClickAddon, size = "md", position
         )}>
         {children}
       </span>
-    )}
+    </Tooltip>
   </div>
 );
 
