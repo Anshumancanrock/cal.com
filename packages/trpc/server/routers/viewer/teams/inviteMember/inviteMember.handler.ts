@@ -111,7 +111,10 @@ function buildInvitationsFromInput({
   usernameOrEmail: TInviteMemberInputSchema["usernameOrEmail"];
   roleForAllInvitees: MembershipRole | undefined;
 }) {
-  const usernameOrEmailList = typeof usernameOrEmail === "string" ? [usernameOrEmail] : usernameOrEmail;
+  // If string, split by comma and trim whitespace
+  const usernameOrEmailList = typeof usernameOrEmail === "string"
+    ? usernameOrEmail.split(',').map(e => e.trim()).filter(e => e)
+    : usernameOrEmail;
 
   return usernameOrEmailList.map((usernameOrEmail) => {
     if (typeof usernameOrEmail === "string")
