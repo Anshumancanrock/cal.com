@@ -276,15 +276,7 @@ function EventTypeSingleLayout({
           </Button>
         </div>
       }>
-      <Suspense fallback={
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <Icon name="loader" className="mx-auto my-5 animate-spin text-2xl" />
-            <p className="text-gray-600 mt-2">Loading Event Type Settings...</p>
-            <p className="text-gray-400 text-sm mt-1">(Testing the spinner fix - 3 sec delay)</p>
-          </div>
-        </div>
-      }>
+      <Suspense fallback={<Icon name="loader" className="mx-auto my-5 animate-spin" />}>
         <div className="flex flex-col xl:flex-row xl:space-x-6">
           <div className="hidden xl:block">
             <VerticalTabs
