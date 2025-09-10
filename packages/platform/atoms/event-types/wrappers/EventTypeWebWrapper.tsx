@@ -38,8 +38,10 @@ const AssignmentWarningDialog = dynamic(
 );
 
 const EventSetupTab = dynamic(() =>
-  // import web wrapper when it's ready
-  import("./EventSetupTabWebWrapper").then((mod) => mod)
+  // import web wrapper when it's ready - ADD 3 SECOND DELAY FOR TESTING SPINNER
+  new Promise(resolve => setTimeout(resolve, 3000)).then(() => 
+    import("./EventSetupTabWebWrapper").then((mod) => mod)
+  )
 );
 
 const EventAvailabilityTab = dynamic(() =>
