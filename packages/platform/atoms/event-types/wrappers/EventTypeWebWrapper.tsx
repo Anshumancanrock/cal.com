@@ -38,8 +38,8 @@ const AssignmentWarningDialog = dynamic(
 );
 
 const EventSetupTab = dynamic(() =>
-  // import web wrapper when it's ready - ADD 1 SECOND DELAY FOR TESTING SPINNER
-  new Promise(resolve => setTimeout(resolve, 1000)).then(() => 
+  // Add delay to show Suspense loader before skeleton for 1.2 seconds
+  new Promise(resolve => setTimeout(resolve, 1200)).then(() =>
     import("./EventSetupTabWebWrapper").then((mod) => mod)
   )
 );
