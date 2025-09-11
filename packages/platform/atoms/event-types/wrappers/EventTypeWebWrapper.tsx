@@ -38,40 +38,37 @@ const AssignmentWarningDialog = dynamic(
 );
 
 const EventSetupTab = dynamic(() =>
-  // Add delay to show Suspense loader before skeleton for 1.2 seconds
-  new Promise(resolve => setTimeout(resolve, 1200)).then(() =>
-    import("./EventSetupTabWebWrapper").then((mod) => mod)
-  )
+  delayImport(import("./EventSetupTabWebWrapper").then((mod) => mod))
 );
 
 const EventAvailabilityTab = dynamic(() =>
-  // import web wrapper when it's ready
-  import("./EventAvailabilityTabWebWrapper").then((mod) => mod)
+  delayImport(import("./EventAvailabilityTabWebWrapper").then((mod) => mod))
 );
 
 const EventTeamAssignmentTab = dynamic(() => import("./EventTeamAssignmentTabWebWrapper").then((mod) => mod));
 
 const EventLimitsTab = dynamic(() =>
-  // import web wrapper when it's ready
-  import("./EventLimitsTabWebWrapper").then((mod) => mod)
+  delayImport(import("./EventLimitsTabWebWrapper").then((mod) => mod))
 );
 
 const EventAdvancedTab = dynamic(() =>
-  // import web wrapper when it's ready
-  import("./EventAdvancedWebWrapper").then((mod) => mod)
+  delayImport(import("./EventAdvancedWebWrapper").then((mod) => mod))
 );
 
 const EventInstantTab = dynamic(() =>
-  import("@calcom/features/eventtypes/components/tabs/instant/EventInstantTab").then(
+  delayImport(import("@calcom/features/eventtypes/components/tabs/instant/EventInstantTab").then(
     (mod) => mod.EventInstantTab
-  )
+  ))
 );
 
 const EventRecurringTab = dynamic(() =>
-  // import web wrapper when it's ready
-  import("./EventRecurringWebWrapper").then((mod) => mod)
+  delayImport(import("./EventRecurringWebWrapper").then((mod) => mod))
 );
 
+// Guarantees Suspense loader shows for 1 second before skeleton loads
+const delayImport = (importPromise: Promise<any>) => {
+  return new Promise(resolve => setTimeout(resolve, 1000)).then(() => importPromise);
+};
 const EventAppsTab = dynamic(() =>
   import("@calcom/features/eventtypes/components/tabs/apps/EventAppsTab").then((mod) => mod.EventAppsTab)
 );
