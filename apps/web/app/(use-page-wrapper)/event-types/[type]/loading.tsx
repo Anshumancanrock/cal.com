@@ -1,5 +1,7 @@
-import { EventTypeEditPageSkeleton } from "./skeleton";
-
+// Temporarily disabled to allow Suspense boundary to work
+// export default function Loading() {
+//   return <EventTypeEditPageSkeleton />;
+// }
 export default function Loading() {
-  return <EventTypeEditPageSkeleton />;
+  return null; // Don't show page-level loading
 }
