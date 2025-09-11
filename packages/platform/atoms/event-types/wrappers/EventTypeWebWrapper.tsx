@@ -29,6 +29,11 @@ import { useEventTypeForm } from "../hooks/useEventTypeForm";
 import { useHandleRouteChange } from "../hooks/useHandleRouteChange";
 import { useTabsNavigations } from "../hooks/useTabsNavigations";
 
+// Guarantees Suspense loader shows for 1 second before skeleton loads
+const delayImport = (importPromise: Promise<any>) => {
+  return new Promise(resolve => setTimeout(resolve, 1000)).then(() => importPromise);
+};
+
 const ManagedEventTypeDialog = dynamic(
   () => import("@calcom/features/eventtypes/components/dialogs/ManagedEventDialog")
 );
@@ -65,10 +70,6 @@ const EventRecurringTab = dynamic(() =>
   delayImport(import("./EventRecurringWebWrapper").then((mod) => mod))
 );
 
-// Guarantees Suspense loader shows for 1 second before skeleton loads
-const delayImport = (importPromise: Promise<any>) => {
-  return new Promise(resolve => setTimeout(resolve, 1000)).then(() => importPromise);
-};
 const EventAppsTab = dynamic(() =>
   import("@calcom/features/eventtypes/components/tabs/apps/EventAppsTab").then((mod) => mod.EventAppsTab)
 );
