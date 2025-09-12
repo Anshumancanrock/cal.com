@@ -1,4 +1,5 @@
 // TODO: Queries in this file are not optimized. Need to optimize them.
+import getOrgIdFromMemberOrTeamId from "@calcom/lib/getOrgIdFromMemberOrTeamId";
 import logger from "@calcom/lib/logger";
 import { safeStringify } from "@calcom/lib/safeStringify";
 import prisma from "@calcom/prisma";
@@ -360,8 +361,21 @@ export async function getAttributesAssignmentData({ orgId, teamId }: { orgId: nu
 }
 
 export async function getAttributesForTeam({ teamId }: { teamId: number }) {
-  const attributes = await getAttributesAssignedToMembersOfTeam({ teamId });
-  return attributes satisfies Attribute[];
+  // First try to get orgId from the teamId (for teams within organizations)
+  const orgId = await getOrgIdFromMemberOrTeamId({ teamId });
+  
+  if (orgId) {
+    // If team belongs to an organization, get all attributes for the organization
+    const attributeRepo = new PrismaAttributeRepository(prisma);
+    const attributes = await attributeRepo.findManyByOrgId({ orgId });
+    return attributes satisfies Attribute[];
+  } else {
+    // Fallback: if team is not part of an organization, check if team itself has attributes
+    // This handles the case where the team itself IS the organization (teamId === orgId)
+    const attributeRepo = new PrismaAttributeRepository(prisma);
+    const attributes = await attributeRepo.findManyByOrgId({ orgId: teamId });
+    return attributes satisfies Attribute[];
+  }
 }
 
 export async function getUsersAttributes({ userId, teamId }: { userId: number; teamId: number }) {

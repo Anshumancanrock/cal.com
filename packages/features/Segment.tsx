@@ -22,6 +22,7 @@ export function useAttributes(teamId: number) {
   const { data: attributes, isPending } = trpc.viewer.appRoutingForms.getAttributesForTeam.useQuery({
     teamId,
   });
+  
   return {
     attributes,
     isPending,
