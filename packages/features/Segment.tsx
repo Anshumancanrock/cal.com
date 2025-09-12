@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -47,7 +47,33 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  // MINIMAL FIX: Build stable config once
+  // CORE FIX: Store immutable tree directly like route-builder does
+  const [tree, setTree] = useState<ImmutableTree>(() => {
+    // Build config immediately for initialization
+    const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
+    const config = withRaqbSettingsAndWidgets({
+      config: baseConfig,
+      configFor: ConfigFor.Attributes,
+    });
+
+    if (initialQueryValue) {
+      try {
+        const state = buildStateFromQueryValue({
+          queryValue: initialQueryValue as JsonTree,
+          config,
+        });
+        return state.state.tree;
+      } catch (error) {
+        console.error('Error building initial tree:', error);
+      }
+    }
+    
+    // Empty tree fallback
+    const emptyTree = QbUtils.loadTree({});
+    return QbUtils.loadTree(QbUtils.checkTree(emptyTree, config));
+  });
+
+  // Stable config for render and onChange
   const config = useMemo(() => {
     const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
     return withRaqbSettingsAndWidgets({
@@ -56,18 +82,17 @@ function SegmentWithAttributes({
     });
   }, [attributes]);
 
-  // CORE FIX: Store immutable tree directly like route-builder does
-  const [tree, setTree] = useState<ImmutableTree>(() => {
-    if (initialQueryValue && config) {
-      const state = buildStateFromQueryValue({
-        queryValue: initialQueryValue as JsonTree,
-        config,
-      });
-      return state.state.tree;
+  // SYNC FIX: Update tree when config changes (attributes change)
+  useEffect(() => {
+    // Validate current tree with new config
+    const validatedTree = QbUtils.checkTree(tree, config);
+    const correctedTree = QbUtils.loadTree(validatedTree);
+    
+    // Only update if the tree actually changed after validation
+    if (correctedTree !== tree) {
+      setTree(correctedTree);
     }
-    // Empty tree fallback
-    return QbUtils.loadTree(QbUtils.checkTree(QbUtils.loadTree({}), config));
-  });
+  }, [config, tree]);
 
   // CRITICAL: Stable renderBuilder to prevent Query component recreation
   const renderBuilder = useCallback(
