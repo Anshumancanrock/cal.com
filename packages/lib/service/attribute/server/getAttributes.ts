@@ -430,7 +430,7 @@ export async function getAttributesForTeam({ teamId }: { teamId: number }) {
   
   // Auto-create test attributes if none exist (GitPod friendly)
   console.log('� [DEBUG] No attributes found, auto-creating test attributes for teamId:', teamId);
-  await autoCreateTestAttributes(teamId);
+  console.log('🔧 [DEBUG] Auto-creation now handled in PrismaAttributeRepository');
   
   // Fetch the newly created attributes
   const newAttributes = await prisma.attribute.findMany({
