@@ -38,7 +38,13 @@ export class PrismaAttributeRepository {
         name: true,
         type: true,
         slug: true,
-        options: true,
+        options: {
+          select: {
+            id: true,
+            value: true,
+            slug: true,
+          },
+        },
       },
     });
 
@@ -95,7 +101,13 @@ export class PrismaAttributeRepository {
             name: true,
             type: true,
             slug: true,
-            options: true,
+            options: {
+              select: {
+                id: true,
+                value: true,
+                slug: true,
+              },
+            },
           },
         });
         console.log('✅ [GitPod] Auto-created', result.length, 'test attributes');
