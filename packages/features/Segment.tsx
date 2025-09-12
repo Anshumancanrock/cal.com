@@ -47,22 +47,29 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const attributesQueryBuilderConfig = useMemo(() => getQueryBuilderConfigForAttributes({
-    attributes,
-  }), [attributes]);
-
   const [queryValue, setQueryValue] = useState(initialQueryValue);
   
-  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => withRaqbSettingsAndWidgets({
-    config: attributesQueryBuilderConfig,
-    configFor: ConfigFor.Attributes,
-  }), [attributesQueryBuilderConfig]);
+  // CRITICAL: Memoize config with stable dependencies to prevent Query component recreation
+  const attributesQueryBuilderConfig = useMemo(() => {
+    return getQueryBuilderConfigForAttributes({ attributes });
+  }, [attributes]);
 
-  const queryBuilderData = useMemo(() => buildStateFromQueryValue({
-    queryValue: queryValue as JsonTree,
-    config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-  }), [queryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
+  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => {
+    return withRaqbSettingsAndWidgets({
+      config: attributesQueryBuilderConfig,
+      configFor: ConfigFor.Attributes,
+    });
+  }, [attributesQueryBuilderConfig]);
 
+  // CRITICAL: Build state with stable config reference
+  const queryBuilderData = useMemo(() => {
+    return buildStateFromQueryValue({
+      queryValue: queryValue as JsonTree,
+      config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+    });
+  }, [queryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
+
+  // CRITICAL: Stable renderBuilder to prevent Query component recreation
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
       <div className="query-builder-container" data-testid="query-builder-container">
@@ -74,6 +81,7 @@ function SegmentWithAttributes({
     []
   );
 
+  // Safe onChange function - keeping original pattern
   function onChange(immutableTree: ImmutableTree) {
     const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
 
