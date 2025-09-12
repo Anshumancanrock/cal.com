@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useRef, useEffect } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -47,9 +47,12 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const [queryValue, setQueryValue] = useState(initialQueryValue);
+  // Internal state for RAQB - separate from parent state updates
+  const [internalQueryValue, setInternalQueryValue] = useState(initialQueryValue);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<any>();
   
-  // CRITICAL: Memoize config with stable dependencies to prevent Query component recreation
+  // Memoize config objects to prevent recreation
   const attributesQueryBuilderConfig = useMemo(() => {
     return getQueryBuilderConfigForAttributes({ attributes });
   }, [attributes]);
@@ -61,13 +64,22 @@ function SegmentWithAttributes({
     });
   }, [attributesQueryBuilderConfig]);
 
-  // CRITICAL: Build state with stable config reference
+  // Use internal state for Query component to prevent re-renders during typing
   const queryBuilderData = useMemo(() => {
     return buildStateFromQueryValue({
-      queryValue: queryValue as JsonTree,
+      queryValue: internalQueryValue as JsonTree,
       config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
     });
-  }, [queryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
+  }, [internalQueryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // CRITICAL: Stable renderBuilder to prevent Query component recreation
   const renderBuilder = useCallback(
@@ -81,16 +93,27 @@ function SegmentWithAttributes({
     []
   );
 
-  // Safe onChange function - keeping original pattern
+  // CRITICAL FIX: Debounced onChange to prevent focus loss during typing
   function onChange(immutableTree: ImmutableTree) {
     const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
 
-    // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. isEqual ensures that we don't end up having infinite re-renders.
-    if (!isEqual(jsonTree, queryValue)) {
-      setQueryValue(jsonTree);
-      onQueryValueChange({
-        queryValue: jsonTree,
-      });
+    // Update internal state immediately (keeps Query component stable)
+    if (!isEqual(jsonTree, internalQueryValue)) {
+      setInternalQueryValue(jsonTree);
+      setIsTyping(true);
+      
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Debounce parent state update to prevent re-renders during typing
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        onQueryValueChange({
+          queryValue: jsonTree,
+        });
+      }, 300); // 300ms debounce
     }
   }
 
@@ -106,7 +129,7 @@ function SegmentWithAttributes({
         />
       </div>
       <div className="mt-4 text-sm">
-        <MatchingTeamMembers teamId={teamId} queryValue={queryValue} />
+        <MatchingTeamMembers teamId={teamId} queryValue={internalQueryValue} />
       </div>
     </div>
   );
