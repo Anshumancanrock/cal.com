@@ -18,7 +18,7 @@ const renderComponent = function <T1>(props: T1 | undefined, Component: React.FC
   if (!props) {
     return <div />;
   }
-  return <Component {...props} />;
+  return <Component key="stable" {...props} />;
 };
 
 const {
@@ -35,7 +35,9 @@ const {
 } = widgetsComponents;
 
 const TextFactory = (props: WidgetProps | undefined) => renderComponent(props, TextWidget);
+
 const TextAreaFactory = (props: WidgetProps | undefined) => renderComponent(props, TextAreaWidget);
+
 const NumberFactory = (props: WidgetProps | undefined) => renderComponent(props, NumberWidget);
 const MultiSelectFactory = (
   props:
