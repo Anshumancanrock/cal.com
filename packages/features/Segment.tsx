@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo, useRef, useEffect } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -47,39 +47,27 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  // Internal state for RAQB - separate from parent state updates
-  const [internalQueryValue, setInternalQueryValue] = useState(initialQueryValue);
-  const [isTyping, setIsTyping] = useState(false);
-  const typingTimeoutRef = useRef<any>();
-  
-  // Memoize config objects to prevent recreation
-  const attributesQueryBuilderConfig = useMemo(() => {
-    return getQueryBuilderConfigForAttributes({ attributes });
-  }, [attributes]);
-
-  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => {
+  // MINIMAL FIX: Build stable config once
+  const config = useMemo(() => {
+    const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
     return withRaqbSettingsAndWidgets({
-      config: attributesQueryBuilderConfig,
+      config: baseConfig,
       configFor: ConfigFor.Attributes,
     });
-  }, [attributesQueryBuilderConfig]);
+  }, [attributes]);
 
-  // Use internal state for Query component to prevent re-renders during typing
-  const queryBuilderData = useMemo(() => {
-    return buildStateFromQueryValue({
-      queryValue: internalQueryValue as JsonTree,
-      config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-    });
-  }, [internalQueryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
+  // CORE FIX: Store immutable tree directly like route-builder does
+  const [tree, setTree] = useState<ImmutableTree>(() => {
+    if (initialQueryValue && config) {
+      const state = buildStateFromQueryValue({
+        queryValue: initialQueryValue as JsonTree,
+        config,
+      });
+      return state.state.tree;
+    }
+    // Empty tree fallback
+    return QbUtils.loadTree(QbUtils.checkTree(QbUtils.loadTree({}), config));
+  });
 
   // CRITICAL: Stable renderBuilder to prevent Query component recreation
   const renderBuilder = useCallback(
@@ -93,43 +81,33 @@ function SegmentWithAttributes({
     []
   );
 
-  // CRITICAL FIX: Debounced onChange to prevent focus loss during typing
-  function onChange(immutableTree: ImmutableTree) {
-    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+  // MINIMAL FIX: Simple onChange that updates tree directly
+  const onChange = useCallback((newTree: ImmutableTree) => {
+    const newJsonTree = QbUtils.getTree(newTree) as AttributesQueryValue;
+    const currentJsonTree = QbUtils.getTree(tree) as AttributesQueryValue;
 
-    // Update internal state immediately (keeps Query component stable)
-    if (!isEqual(jsonTree, internalQueryValue)) {
-      setInternalQueryValue(jsonTree);
-      setIsTyping(true);
-      
-      // Clear existing timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      
-      // Debounce parent state update to prevent re-renders during typing
-      typingTimeoutRef.current = setTimeout(() => {
-        setIsTyping(false);
-        onQueryValueChange({
-          queryValue: jsonTree,
-        });
-      }, 300); // 300ms debounce
+    // Only update if actually changed
+    if (!isEqual(newJsonTree, currentJsonTree)) {
+      setTree(newTree); // Store immutable tree directly
+      onQueryValueChange({
+        queryValue: newJsonTree,
+      });
     }
-  }
+  }, [tree, onQueryValueChange]);
 
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
     <div>
       <div className={cn("cal-query-builder", className)}>
         <Query
-          {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
-          value={queryBuilderData.state.tree}
+          {...config}
+          value={tree}
           onChange={onChange}
           renderBuilder={renderBuilder}
         />
       </div>
       <div className="mt-4 text-sm">
-        <MatchingTeamMembers teamId={teamId} queryValue={internalQueryValue} />
+        <MatchingTeamMembers teamId={teamId} queryValue={QbUtils.getTree(tree)} />
       </div>
     </div>
   );
