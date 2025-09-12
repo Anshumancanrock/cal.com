@@ -53,35 +53,25 @@ export class PrismaAttributeRepository {
       console.log('🔧 [GitPod] No attributes found for orgId:', orgId, '- auto-creating test attributes');
       
       try {
-        // Create Test1 attribute (simple for focus testing)
+        // Create atr-1 attribute (TEXT type for focus testing)
         await this.prismaClient.attribute.create({
           data: {
-            name: "Test1",
-            slug: "test1",
-            type: "SINGLE_SELECT",
+            name: "atr-1",
+            slug: "atr-1",
+            type: "TEXT",
             teamId: orgId,
-            options: {
-              create: [
-                { value: "Option A", slug: "option-a" },
-                { value: "Option B", slug: "option-b" }
-              ]
-            }
+            // No options for TEXT type attributes
           }
         });
 
-        // Create Test2 attribute (simple for focus testing)
+        // Create atr-2 attribute (TEXT type for focus testing)
         await this.prismaClient.attribute.create({
           data: {
-            name: "Test2",
-            slug: "test2",
-            type: "SINGLE_SELECT",
+            name: "atr-2",
+            slug: "atr-2",
+            type: "TEXT",
             teamId: orgId,
-            options: {
-              create: [
-                { value: "Choice X", slug: "choice-x" },
-                { value: "Choice Y", slug: "choice-y" }
-              ]
-            }
+            // No options for TEXT type attributes
           }
         });
 
@@ -104,7 +94,7 @@ export class PrismaAttributeRepository {
             },
           },
         });
-        console.log('✅ [GitPod] Auto-created', result.length, 'test attributes');
+        console.log('✅ [GitPod] Auto-created', result.length, 'text attributes (atr-1, atr-2)');
       } catch (error) {
         console.log("⚠️ [GitPod] Auto-creation failed (this is okay):", error);
       }
