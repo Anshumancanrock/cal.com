@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -41,20 +41,21 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const attributesQueryBuilderConfig = getQueryBuilderConfigForAttributes({
+  const attributesQueryBuilderConfig = useMemo(() => getQueryBuilderConfigForAttributes({
     attributes,
-  });
+  }), [attributes]);
 
   const [queryValue, setQueryValue] = useState(initialQueryValue);
-  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = withRaqbSettingsAndWidgets({
+  
+  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => withRaqbSettingsAndWidgets({
     config: attributesQueryBuilderConfig,
     configFor: ConfigFor.Attributes,
-  });
+  }), [attributesQueryBuilderConfig]);
 
-  const queryBuilderData = buildStateFromQueryValue({
+  const queryBuilderData = useMemo(() => buildStateFromQueryValue({
     queryValue: queryValue as JsonTree,
     config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-  });
+  }), [queryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
