@@ -6,51 +6,45 @@ const prisma = new PrismaClient();
 async function createTestAttributes() {
   console.log("🔍 Creating test attributes...");
 
-  // Find the team named "team1event1"
-  const targetTeam = await prisma.team.findFirst({
-    where: {
-      name: "team1event1"
-    },
-    select: {
-      id: true,
-      name: true,
+  // Let's see what teams exist first
+  const allTeams = await prisma.team.findMany({
+    select: { 
+      id: true, 
+      name: true, 
       isOrganization: true,
-      parentId: true,
+      parentId: true 
     }
   });
+  console.log("🔍 All teams in database:", allTeams);
 
+  // Use the first team we find (fallback approach)
+  const targetTeam = allTeams.find(t => t.name === "team1event1") || allTeams[0];
+  
   if (!targetTeam) {
-    console.log("❌ Team 'team1event1' not found!");
-    // Let's see what teams exist
-    const allTeams = await prisma.team.findMany({
-      select: { id: true, name: true, isOrganization: true }
-    });
-    console.log("Available teams:", allTeams);
+    console.log("❌ No teams found in database!");
     return;
   }
 
   console.log(`🔍 Using team: ${targetTeam.name} (ID: ${targetTeam.id})`);
 
-  // Create exactly 2 attributes: attr-1 and attr-2
+  // Create exactly 2 simple attributes for testing
   const attributes = [
     {
-      name: "attr-1",
-      slug: "attr-1",
+      name: "Department",
+      slug: "department", 
       type: AttributeType.SINGLE_SELECT,
       options: [
-        { value: "Option 1", slug: "option-1" },
-        { value: "Option 2", slug: "option-2" },
-        { value: "Option 3", slug: "option-3" },
+        { value: "Engineering", slug: "engineering" },
+        { value: "Sales", slug: "sales" },
       ]
     },
     {
-      name: "attr-2",
-      slug: "attr-2",
+      name: "Level",
+      slug: "level",
       type: AttributeType.SINGLE_SELECT,
       options: [
-        { value: "Value A", slug: "value-a" },
-        { value: "Value B", slug: "value-b" },
-        { value: "Value C", slug: "value-c" },
+        { value: "Junior", slug: "junior" },
+        { value: "Senior", slug: "senior" },
       ]
     }
   ];

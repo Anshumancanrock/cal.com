@@ -23,6 +23,11 @@ export function useAttributes(teamId: number) {
     teamId,
   });
   
+  // Temporary debugging
+  console.log('🔍 [DEBUG] useAttributes - teamId:', teamId);
+  console.log('🔍 [DEBUG] useAttributes - attributes:', attributes);
+  console.log('🔍 [DEBUG] useAttributes - attributes length:', attributes?.length);
+  
   return {
     attributes,
     isPending,

@@ -6,7 +6,8 @@ import prisma from "@calcom/prisma";
 import type { AttributeToUser } from "@calcom/prisma/client";
 import type { AttributeType } from "@calcom/prisma/enums";
 
-import { PrismaAttributeRepository } from "../../../server/repository/PrismaAttributeRepository";
+import { P  // Note: Auto-creation now handled in PrismaAttributeRepository
+  console.log('🔧 [DEBUG] No attributes found for teamId:', teamId);maAttributeRepository } from "../../../server/repository/PrismaAttributeRepository";
 import { PrismaAttributeToUserRepository } from "../../../server/repository/PrismaAttributeToUserRepository";
 import { MembershipRepository } from "../../../server/repository/membership";
 import type { AttributeId } from "../types";
@@ -361,21 +362,99 @@ export async function getAttributesAssignmentData({ orgId, teamId }: { orgId: nu
 }
 
 export async function getAttributesForTeam({ teamId }: { teamId: number }) {
-  // First try to get orgId from the teamId (for teams within organizations)
+  console.log('🐛 [DEBUG] getAttributesForTeam called with teamId:', teamId);
+  
+  // SIMPLE APPROACH: Just look for attributes directly with the teamId
+  // Skip the complex org lookup for now
+  const directAttributes = await prisma.attribute.findMany({
+    where: {
+      teamId: teamId,
+    },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      slug: true,
+      options: {
+        select: {
+          id: true,
+          value: true,
+          slug: true,
+        }
+      }
+    }
+  });
+  console.log('🐛 [DEBUG] Direct attributes for teamId', teamId, ':', directAttributes);
+  
+  if (directAttributes.length > 0) {
+    console.log('🐛 [DEBUG] Returning direct attributes');
+    return directAttributes satisfies Attribute[];
+  }
+  
+  // If no direct attributes, check ALL attributes to see what exists
+  const allAttributes = await prisma.attribute.findMany({
+    select: {
+      id: true,
+      name: true,
+      teamId: true,
+      type: true,
+    }
+  });
+  console.log('🐛 [DEBUG] ALL attributes in database:', allAttributes);
+  
+  // Try org lookup as fallback
   const orgId = await getOrgIdFromMemberOrTeamId({ teamId });
+  console.log('🐛 [DEBUG] Found orgId for teamId', teamId, ':', orgId);
   
   if (orgId) {
-    // If team belongs to an organization, get all attributes for the organization
-    const attributeRepo = new PrismaAttributeRepository(prisma);
-    const attributes = await attributeRepo.findManyByOrgId({ orgId });
-    return attributes satisfies Attribute[];
-  } else {
-    // Fallback: if team is not part of an organization, check if team itself has attributes
-    // This handles the case where the team itself IS the organization (teamId === orgId)
-    const attributeRepo = new PrismaAttributeRepository(prisma);
-    const attributes = await attributeRepo.findManyByOrgId({ orgId: teamId });
-    return attributes satisfies Attribute[];
+    const orgAttributes = await prisma.attribute.findMany({
+      where: {
+        teamId: orgId,
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        slug: true,
+        options: {
+          select: {
+            id: true,
+            value: true,
+            slug: true,
+          }
+        }
+      }
+    });
+    console.log('🐛 [DEBUG] Org attributes for orgId', orgId, ':', orgAttributes);
+    return orgAttributes satisfies Attribute[];
   }
+  
+  // Auto-create test attributes if none exist (GitPod friendly)
+  console.log('� [DEBUG] No attributes found, auto-creating test attributes for teamId:', teamId);
+  await autoCreateTestAttributes(teamId);
+  
+  // Fetch the newly created attributes
+  const newAttributes = await prisma.attribute.findMany({
+    where: {
+      teamId: teamId,
+    },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      slug: true,
+      options: {
+        select: {
+          id: true,
+          value: true,
+          slug: true,
+        }
+      }
+    }
+  });
+  
+  console.log('🔧 [DEBUG] No attributes found, returning empty array');
+  return [] satisfies Attribute[];
 }
 
 export async function getUsersAttributes({ userId, teamId }: { userId: number; teamId: number }) {
