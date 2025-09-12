@@ -6,8 +6,7 @@ import prisma from "@calcom/prisma";
 import type { AttributeToUser } from "@calcom/prisma/client";
 import type { AttributeType } from "@calcom/prisma/enums";
 
-import { P  // Note: Auto-creation now handled in PrismaAttributeRepository
-  console.log('🔧 [DEBUG] No attributes found for teamId:', teamId);maAttributeRepository } from "../../../server/repository/PrismaAttributeRepository";
+import { PrismaAttributeRepository } from "../../../server/repository/PrismaAttributeRepository";
 import { PrismaAttributeToUserRepository } from "../../../server/repository/PrismaAttributeToUserRepository";
 import { MembershipRepository } from "../../../server/repository/membership";
 import type { AttributeId } from "../types";

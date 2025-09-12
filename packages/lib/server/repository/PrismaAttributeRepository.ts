@@ -53,39 +53,33 @@ export class PrismaAttributeRepository {
       console.log('🔧 [GitPod] No attributes found for orgId:', orgId, '- auto-creating test attributes');
       
       try {
-        // Create Department attribute
+        // Create Test1 attribute (simple for focus testing)
         await this.prismaClient.attribute.create({
           data: {
-            name: "Department",
-            slug: "department",
+            name: "Test1",
+            slug: "test1",
             type: "SINGLE_SELECT",
             teamId: orgId,
             options: {
               create: [
-                { value: "Engineering", slug: "engineering" },
-                { value: "Sales", slug: "sales" },
-                { value: "Marketing", slug: "marketing" },
-                { value: "Support", slug: "support" },
-                { value: "HR", slug: "hr" }
+                { value: "Option A", slug: "option-a" },
+                { value: "Option B", slug: "option-b" }
               ]
             }
           }
         });
 
-        // Create Level attribute
+        // Create Test2 attribute (simple for focus testing)
         await this.prismaClient.attribute.create({
           data: {
-            name: "Level",
-            slug: "level",
+            name: "Test2",
+            slug: "test2",
             type: "SINGLE_SELECT",
             teamId: orgId,
             options: {
               create: [
-                { value: "Junior", slug: "junior" },
-                { value: "Mid", slug: "mid" },
-                { value: "Senior", slug: "senior" },
-                { value: "Lead", slug: "lead" },
-                { value: "Principal", slug: "principal" }
+                { value: "Choice X", slug: "choice-x" },
+                { value: "Choice Y", slug: "choice-y" }
               ]
             }
           }
