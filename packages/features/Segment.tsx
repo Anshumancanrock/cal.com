@@ -51,8 +51,10 @@ function SegmentWithAttributes({
   }), [attributesQueryBuilderConfig]);
 
   const [queryBuilderState, setQueryBuilderState] = useState(() => {
+    // Use the same config creation pattern as the memoized version
+    const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
     const config = withRaqbSettingsAndWidgets({
-      config: getQueryBuilderConfigForAttributes({ attributes }),
+      config: baseConfig,
       configFor: ConfigFor.Attributes,
     });
     return buildStateFromQueryValue({
@@ -60,6 +62,31 @@ function SegmentWithAttributes({
       config,
     });
   });
+
+  const handleChange = useCallback((immutableTree: ImmutableTree) => {
+    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+    
+    // Update stable state for RAQB and call parent callback
+    setQueryBuilderState((prevState) => {
+      const newState = {
+        state: {
+          tree: immutableTree,
+          config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+        },
+        queryValue: jsonTree,
+      };
+      
+      // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. 
+      // isEqual ensures that we don't end up having infinite re-renders.
+      if (!isEqual(jsonTree, prevState.queryValue)) {
+        onQueryValueChange({
+          queryValue: jsonTree,
+        });
+      }
+      
+      return newState;
+    });
+  }, [attributesQueryBuilderConfigWithRaqbSettingsAndWidgets, onQueryValueChange]);
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
@@ -79,28 +106,7 @@ function SegmentWithAttributes({
         <Query
           {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
           value={queryBuilderState.state.tree}
-          onChange={(immutableTree) => {
-            const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
-            
-            // Update stable state for RAQB and call parent callback
-            const newState = {
-              state: {
-                tree: immutableTree,
-                config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-              },
-              queryValue: jsonTree,
-            };
-            
-            setQueryBuilderState(newState);
-
-            // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. 
-            // isEqual ensures that we don't end up having infinite re-renders.
-            if (!isEqual(jsonTree, queryBuilderState.queryValue)) {
-              onQueryValueChange({
-                queryValue: jsonTree,
-              });
-            }
-          }}
+          onChange={handleChange}
           renderBuilder={renderBuilder}
         />
       </div>
