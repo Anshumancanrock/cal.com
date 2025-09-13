@@ -53,9 +53,13 @@ function SegmentWithAttributes({
   }), [attributesQueryBuilderConfig]);
 
   const [queryBuilderState, setQueryBuilderState] = useState(() => {
+    const config = withRaqbSettingsAndWidgets({
+      config: getQueryBuilderConfigForAttributes({ attributes }),
+      configFor: ConfigFor.Attributes,
+    });
     return buildStateFromQueryValue({
-      queryValue: queryValue as JsonTree,
-      config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+      queryValue: initialQueryValue as JsonTree,
+      config,
     });
   });
 
@@ -77,7 +81,7 @@ function SegmentWithAttributes({
         <Query
           {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
           value={queryBuilderState.state.tree}
-          onChange={useCallback((immutableTree) => {
+          onChange={(immutableTree) => {
             const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
             
             // Update stable state for RAQB
@@ -97,7 +101,7 @@ function SegmentWithAttributes({
                 queryValue: jsonTree,
               });
             }
-          }, [attributesQueryBuilderConfigWithRaqbSettingsAndWidgets, queryValue, onQueryValueChange])}
+          }}
           renderBuilder={renderBuilder}
         />
       </div>
