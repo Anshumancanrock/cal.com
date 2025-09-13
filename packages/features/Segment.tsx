@@ -46,14 +46,20 @@ function SegmentWithAttributes({
   });
 
   const [queryValue, setQueryValue] = useState(initialQueryValue);
+  const [queryBuilderState, setQueryBuilderState] = useState(() => {
+    const config = withRaqbSettingsAndWidgets({
+      config: attributesQueryBuilderConfig,
+      configFor: ConfigFor.Attributes,
+    });
+    return buildStateFromQueryValue({
+      queryValue: queryValue as JsonTree,
+      config,
+    });
+  });
+
   const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = withRaqbSettingsAndWidgets({
     config: attributesQueryBuilderConfig,
     configFor: ConfigFor.Attributes,
-  });
-
-  const queryBuilderData = buildStateFromQueryValue({
-    queryValue: queryValue as JsonTree,
-    config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
   });
 
   const renderBuilder = useCallback(
@@ -67,45 +73,34 @@ function SegmentWithAttributes({
     []
   );
 
-  // 🎯 UUID FIX: Stable UUIDs to prevent re-renders
-  const stableGroupId = useMemo(() => QbUtils.uuid(), []);
-  const stableRuleId = useMemo(() => QbUtils.uuid(), []);
-
-  function onChange(immutableTree: ImmutableTree) {
-    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
-
-    // 🎯 UUID FIX: Ensure stable UUIDs in the output
-    if (jsonTree && typeof jsonTree === 'object') {
-      jsonTree.id = stableGroupId;
-      // If there are children, ensure they use stable UUIDs too
-      if (jsonTree.children1 && Object.keys(jsonTree.children1).length > 0) {
-        const firstChild = Object.values(jsonTree.children1)[0];
-        if (firstChild && typeof firstChild === 'object') {
-          const newChildren1: any = {};
-          newChildren1[stableRuleId] = firstChild;
-          jsonTree.children1 = newChildren1;
-        }
-      }
-    }
-
-    // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. 
-    // isEqual ensures that we don't end up having infinite re-renders.
-    if (!isEqual(jsonTree, queryValue)) {
-      setQueryValue(jsonTree);
-      onQueryValueChange({
-        queryValue: jsonTree,
-      });
-    }
-  }
-
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
     <div>
       <div className={cn("cal-query-builder", className)}>
         <Query
           {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
-          value={queryBuilderData.state.tree}
-          onChange={onChange}
+          value={queryBuilderState.state.tree}
+          onChange={(immutableTree) => {
+            const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+            
+            // Update stable state for RAQB
+            setQueryBuilderState({
+              state: {
+                tree: immutableTree,
+                config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+              },
+              queryValue: jsonTree,
+            });
+
+            // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. 
+            // isEqual ensures that we don't end up having infinite re-renders.
+            if (!isEqual(jsonTree, queryValue)) {
+              setQueryValue(jsonTree);
+              onQueryValueChange({
+                queryValue: jsonTree,
+              });
+            }
+          }}
           renderBuilder={renderBuilder}
         />
       </div>
