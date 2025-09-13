@@ -57,10 +57,8 @@ function SegmentWithAttributes({
     }), [attributesQueryBuilderConfig]
   );
 
-  // Initialize tree state - start with empty tree and update via useEffect
-  const [tree, setTree] = useState<ImmutableTree>(() => 
-    QbUtils.loadFromJsonLogic(undefined, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets)
-  );
+  // Initialize tree state - will be properly set by useEffect
+  const [tree, setTree] = useState<ImmutableTree | null>(null);
 
   // Update tree when config or queryValue changes
   useEffect(() => {
@@ -94,6 +92,11 @@ function SegmentWithAttributes({
       });
     }
   }, [queryValue, onQueryValueChange]);
+
+  // Don't render until tree is initialized
+  if (!tree) {
+    return <div>Loading...</div>;
+  }
 
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
