@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo, useEffect } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -82,18 +82,6 @@ function SegmentWithAttributes({
     });
   }, [attributes]);
 
-  // SYNC FIX: Update tree when config changes (attributes change)
-  useEffect(() => {
-    // Validate current tree with new config
-    const validatedTree = QbUtils.checkTree(tree, config);
-    const correctedTree = QbUtils.loadTree(validatedTree);
-    
-    // Only update if the tree actually changed after validation
-    if (correctedTree !== tree) {
-      setTree(correctedTree);
-    }
-  }, [config, tree]);
-
   // CRITICAL: Stable renderBuilder to prevent Query component recreation
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
@@ -106,19 +94,14 @@ function SegmentWithAttributes({
     []
   );
 
-  // MINIMAL FIX: Simple onChange that updates tree directly
+  // SIMPLE FIX: Direct tree update, no over-engineering
   const onChange = useCallback((newTree: ImmutableTree) => {
-    const newJsonTree = QbUtils.getTree(newTree) as AttributesQueryValue;
-    const currentJsonTree = QbUtils.getTree(tree) as AttributesQueryValue;
-
-    // Only update if actually changed
-    if (!isEqual(newJsonTree, currentJsonTree)) {
-      setTree(newTree); // Store immutable tree directly
-      onQueryValueChange({
-        queryValue: newJsonTree,
-      });
-    }
-  }, [tree, onQueryValueChange]);
+    setTree(newTree);
+    const jsonTree = QbUtils.getTree(newTree) as AttributesQueryValue;
+    onQueryValueChange({
+      queryValue: jsonTree,
+    });
+  }, [onQueryValueChange]);
 
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
