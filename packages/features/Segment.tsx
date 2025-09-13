@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Utils as QbUtils } from "react-awesome-query-builder";
+import { useCallback, useMemo, useState } from "react";
+import { Builder, Query, Utils as QbUtils } from "react-awesome-query-builder";
 
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { AttributesQueryValue } from "@calcom/lib/raqb/types";
+import { withRaqbSettingsAndWidgets } from "@calcom/lib/raqb/utils";
 import { trpc, type RouterOutputs } from "@calcom/trpc";
-import cn from "@calcom/ui/classNames";
 
 export type Attributes = RouterOutputs["viewer"]["appRoutingForms"]["getAttributesForTeam"];
 export function useAttributes(teamId: number) {
@@ -17,78 +17,6 @@ export function useAttributes(teamId: number) {
     attributes,
     isPending,
   };
-}
-
-// Simple custom filter for attributes - no RAQB complexity
-function AttributeFilter({
-  attributes,
-  value,
-  onChange,
-}: {
-  attributes: Attributes;
-  value: { attributeId: string; operator: string; filterValue: string } | null;
-  onChange: (filter: { attributeId: string; operator: string; filterValue: string } | null) => void;
-}) {
-  const { t } = useLocale();
-  const [localFilter, setLocalFilter] = useState(value || { attributeId: "", operator: "equals", filterValue: "" });
-
-  const handleChange = useCallback((updates: Partial<typeof localFilter>) => {
-    const newFilter = { ...localFilter, ...updates };
-    setLocalFilter(newFilter);
-    
-    // Only call onChange if we have a complete filter
-    if (newFilter.attributeId && newFilter.filterValue) {
-      onChange(newFilter);
-    } else if (!newFilter.attributeId && !newFilter.filterValue) {
-      onChange(null);
-    }
-  }, [localFilter, onChange]);
-
-  return (
-    <div className="space-y-3 rounded-md border border-subtle bg-default p-4">
-      <div className="grid grid-cols-3 gap-3">
-        {/* Attribute Selection */}
-        <select
-          value={localFilter.attributeId}
-          onChange={(e) => handleChange({ attributeId: e.target.value })}
-          className="rounded-md border border-default bg-default px-3 py-2 text-sm focus:border-emphasis focus:outline-none focus:ring-2 focus:ring-brand-default"
-        >
-          <option value="">{t("select_attribute")}</option>
-          {attributes.map((attr) => (
-            <option key={attr.id} value={attr.id}>
-              {attr.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Operator Selection */}
-        <select
-          value={localFilter.operator}
-          onChange={(e) => handleChange({ operator: e.target.value })}
-          className="rounded-md border border-default bg-default px-3 py-2 text-sm focus:border-emphasis focus:outline-none focus:ring-2 focus:ring-brand-default"
-        >
-          <option value="equals">{t("equals")}</option>
-          <option value="contains">{t("contains")}</option>
-          <option value="not_equals">{t("not_equals")}</option>
-        </select>
-
-        {/* Value Input */}
-        <input
-          type="text"
-          value={localFilter.filterValue}
-          onChange={(e) => handleChange({ filterValue: e.target.value })}
-          placeholder={t("enter_value")}
-          className="rounded-md border border-default bg-default px-3 py-2 text-sm focus:border-emphasis focus:outline-none focus:ring-2 focus:ring-brand-default"
-        />
-      </div>
-      
-      {localFilter.attributeId && localFilter.filterValue && (
-        <div className="text-xs text-muted">
-          Filter: {attributes.find(a => a.id === localFilter.attributeId)?.name} {localFilter.operator} "{localFilter.filterValue}"
-        </div>
-      )}
-    </div>
-  );
 }
 
 function SegmentWithAttributes({
@@ -104,81 +32,77 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  // Convert RAQB queryValue to simple filter format
-  const [simpleFilter, setSimpleFilter] = useState<{ attributeId: string; operator: string; filterValue: string } | null>(() => {
-    // Extract simple filter from RAQB queryValue if it exists
-    if (initialQueryValue?.children1) {
-      const firstRule = Object.values(initialQueryValue.children1)[0];
-      if (firstRule?.type === "rule" && firstRule.properties) {
-        return {
-          attributeId: firstRule.properties.field || "",
-          operator: firstRule.properties.operator || "equals", 
-          filterValue: firstRule.properties.value?.[0] || ""
+  const { t } = useLocale();
+
+  // Stable UUIDs - THE KEY FIX to prevent re-renders!
+  const stableGroupId = useMemo(() => QbUtils.uuid(), []);
+  const stableRuleId = useMemo(() => QbUtils.uuid(), []);
+
+  // RAQB configuration with attributes
+  const config = useMemo(() => {
+    return withRaqbSettingsAndWidgets(
+      attributes.reduce((acc, attribute) => {
+        acc[attribute.id] = {
+          label: attribute.name,
+          type: "text",
+          valueSources: ["value"],
         };
-      }
+        return acc;
+      }, {} as Record<string, any>)
+    );
+  }, [attributes]);
+
+  // Initialize immutable tree from query value or create empty
+  const [tree, setTree] = useState(() => {
+    if (initialQueryValue) {
+      return QbUtils.checkTree(QbUtils.loadTree(initialQueryValue), config);
     }
-    return null;
+    // Create empty tree with stable UUID
+    return QbUtils.checkTree(QbUtils.loadTree({
+      id: stableGroupId,
+      type: "group",
+      children1: {}
+    }), config);
   });
 
-  const handleFilterChange = useCallback((filter: { attributeId: string; operator: string; filterValue: string } | null) => {
-    setSimpleFilter(filter);
+  const handleTreeChange = useCallback((newTree: any) => {
+    setTree(newTree);
+    const queryValue = QbUtils.getTree(newTree);
     
-    // Convert simple filter back to RAQB format for compatibility
-    let raqbQuery: AttributesQueryValue;
-    
-    if (filter && filter.attributeId && filter.filterValue) {
-      raqbQuery = {
-        id: QbUtils.uuid(),
-        type: "group",
-        children1: {
-          [QbUtils.uuid()]: {
-            type: "rule",
-            properties: {
-              field: filter.attributeId,
-              operator: filter.operator,
-              value: [filter.filterValue],
-              valueSrc: ["value"],
-              valueType: ["text"]
-            }
-          }
+    // Ensure stable UUIDs in the output
+    if (queryValue && typeof queryValue === 'object') {
+      queryValue.id = stableGroupId;
+      // If there are children, ensure they use stable UUIDs too
+      if (queryValue.children1 && Object.keys(queryValue.children1).length > 0) {
+        const firstChild = Object.values(queryValue.children1)[0];
+        if (firstChild && typeof firstChild === 'object') {
+          const newChildren1: any = {};
+          newChildren1[stableRuleId] = firstChild;
+          queryValue.children1 = newChildren1;
         }
-      };
-    } else {
-      // Empty query
-      raqbQuery = {
-        id: QbUtils.uuid(), 
-        type: "group",
-        children1: {}
-      };
+      }
     }
     
-    onQueryValueChange({ queryValue: raqbQuery });
-  }, [onQueryValueChange]);
+    onQueryValueChange({ queryValue });
+  }, [onQueryValueChange, stableGroupId, stableRuleId]);
+
+  const renderBuilder = () => (
+    <Query {...config} value={tree} onChange={handleTreeChange} renderBuilder={Builder} />
+  );
+
+  if (!attributes.length) {
+    return (
+      <div className="text-subtle rounded-md border border-subtle bg-muted p-4 text-center text-sm">
+        {t("no_attributes_found")}
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
-      <AttributeFilter
-        attributes={attributes}
-        value={simpleFilter}
-        onChange={handleFilterChange}
-      />
-      <div className="mt-4 text-sm">
-        <MatchingTeamMembers teamId={teamId} queryValue={simpleFilter ? {
-          id: QbUtils.uuid(),
-          type: "group", 
-          children1: {
-            [QbUtils.uuid()]: {
-              type: "rule",
-              properties: {
-                field: simpleFilter.attributeId,
-                operator: simpleFilter.operator,
-                value: [simpleFilter.filterValue],
-                valueSrc: ["value"],
-                valueType: ["text"]
-              }
-            }
-          }
-        } : null} />
+      <div className="space-y-4">
+        {renderBuilder()}
+        <MatchingTeamMembers teamId={teamId} queryValue={QbUtils.getTree(tree)} />
       </div>
     </div>
   );
