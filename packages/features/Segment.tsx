@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -41,11 +41,13 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const attributesQueryBuilderConfig = getQueryBuilderConfigForAttributes({
-    attributes,
-  });
-
   const [queryValue, setQueryValue] = useState(initialQueryValue);
+  
+  // Memoize the base config to prevent recreation
+  const attributesQueryBuilderConfig = useMemo(() => 
+    getQueryBuilderConfigForAttributes({ attributes }), 
+    [attributes]
+  );
   
   // Memoize config to prevent recreating on every render (which causes focus loss)
   const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => 
@@ -55,13 +57,19 @@ function SegmentWithAttributes({
     }), [attributesQueryBuilderConfig]
   );
 
-  // Initialize tree state once and keep it stable
-  const [tree, setTree] = useState<ImmutableTree>(() => {
-    return buildStateFromQueryValue({
+  // Initialize tree state - start with empty tree and update via useEffect
+  const [tree, setTree] = useState<ImmutableTree>(() => 
+    QbUtils.loadFromJsonLogic(undefined, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets)
+  );
+
+  // Update tree when config or queryValue changes
+  useEffect(() => {
+    const newTree = buildStateFromQueryValue({
       queryValue: queryValue as JsonTree,
       config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
     }).state.tree;
-  });
+    setTree(newTree);
+  }, [queryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
