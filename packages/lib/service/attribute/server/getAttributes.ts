@@ -430,7 +430,28 @@ export async function getAttributesForTeam({ teamId }: { teamId: number }) {
   
   // Auto-create test attributes if none exist (GitPod friendly)
   console.log('� [DEBUG] No attributes found, auto-creating test attributes for teamId:', teamId);
-  console.log('🔧 [DEBUG] Auto-creation now handled in PrismaAttributeRepository');
+  try {
+    await prisma.attribute.createMany({
+      data: [
+        {
+          name: "atr-1",
+          slug: "atr-1",
+          type: "TEXT",
+          teamId: teamId,
+        },
+        {
+          name: "atr-2",
+          slug: "atr-2",
+          type: "TEXT",
+          teamId: teamId,
+        }
+      ],
+      skipDuplicates: true
+    });
+    console.log('🔧 [DEBUG] Created test attributes');
+  } catch (error) {
+    console.log('⚠️ [DEBUG] Auto-creation failed:', error);
+  }
   
   // Fetch the newly created attributes
   const newAttributes = await prisma.attribute.findMany({
@@ -452,8 +473,8 @@ export async function getAttributesForTeam({ teamId }: { teamId: number }) {
     }
   });
   
-  console.log('🔧 [DEBUG] No attributes found, returning empty array');
-  return [] satisfies Attribute[];
+  console.log('🔧 [DEBUG] Final attributes for teamId:', teamId, newAttributes);
+  return newAttributes satisfies Attribute[];
 }
 
 export async function getUsersAttributes({ userId, teamId }: { userId: number; teamId: number }) {
