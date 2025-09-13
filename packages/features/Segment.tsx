@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -41,52 +41,36 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const attributesQueryBuilderConfig = useMemo(() => getQueryBuilderConfigForAttributes({
-    attributes,
-  }), [attributes]);
+  // 1) Stable RAQB config
+  const attributesConfig = useMemo(
+    () => getQueryBuilderConfigForAttributes({ attributes }),
+    [attributes]
+  );
+  const configWithSettings = useMemo(
+    () =>
+      withRaqbSettingsAndWidgets({
+        config: attributesConfig,
+        configFor: ConfigFor.Attributes,
+      }),
+    [attributesConfig]
+  );
 
-  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => withRaqbSettingsAndWidgets({
-    config: attributesQueryBuilderConfig,
-    configFor: ConfigFor.Attributes,
-  }), [attributesQueryBuilderConfig]);
+  // 2) Manage ImmutableTree in state; derive JSON for external consumers
+  const initialState = useMemo(
+    () =>
+      buildStateFromQueryValue({
+        queryValue: (initialQueryValue as JsonTree) ?? null,
+        config: configWithSettings,
+      }),
+    [configWithSettings, initialQueryValue]
+  );
 
-  const [queryBuilderState, setQueryBuilderState] = useState(() => {
-    // Use the same config creation pattern as the memoized version
-    const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
-    const config = withRaqbSettingsAndWidgets({
-      config: baseConfig,
-      configFor: ConfigFor.Attributes,
-    });
-    return buildStateFromQueryValue({
-      queryValue: initialQueryValue as JsonTree,
-      config,
-    });
-  });
+  const [tree, setTree] = useState<ImmutableTree>(initialState.state.tree);
+  const [queryValue, setQueryValue] = useState<AttributesQueryValue>(
+    initialState.queryValue as AttributesQueryValue
+  );
 
-  const handleChange = useCallback((immutableTree: ImmutableTree) => {
-    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
-    
-    // Update stable state for RAQB and call parent callback
-    setQueryBuilderState((prevState) => {
-      const newState = {
-        state: {
-          tree: immutableTree,
-          config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-        },
-        queryValue: jsonTree,
-      };
-      
-      // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. 
-      // isEqual ensures that we don't end up having infinite re-renders.
-      if (!isEqual(jsonTree, prevState.queryValue)) {
-        onQueryValueChange({
-          queryValue: jsonTree,
-        });
-      }
-      
-      return newState;
-    });
-  }, [attributesQueryBuilderConfigWithRaqbSettingsAndWidgets, onQueryValueChange]);
+
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
@@ -99,19 +83,52 @@ function SegmentWithAttributes({
     []
   );
 
+  // 3) RAQB onChange: update tree in-place and propagate JSON only when changed
+  const onChange = useCallback(
+    (immutableTree: ImmutableTree) => {
+      setTree(immutableTree);
+      const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+      if (!isEqual(jsonTree, queryValue)) {
+        setQueryValue(jsonTree);
+        onQueryValueChange({ queryValue: jsonTree });
+      }
+    },
+    [onQueryValueChange, queryValue]
+  );
+
+  // 4) If parent provides a new queryValue, rebuild tree accordingly
+  useEffect(() => {
+    if (initialQueryValue && !isEqual(initialQueryValue, queryValue)) {
+      const rebuilt = buildStateFromQueryValue({
+        queryValue: initialQueryValue as JsonTree,
+        config: configWithSettings,
+      });
+      setTree(rebuilt.state.tree);
+      setQueryValue(rebuilt.queryValue as AttributesQueryValue);
+    }
+  }, [initialQueryValue, configWithSettings, queryValue]);
+
+  // 5) If config changes (attributes updated), rebuild tree from current JSON
+  useEffect(() => {
+    const rebuilt = buildStateFromQueryValue({
+      queryValue: (queryValue as JsonTree) ?? null,
+      config: configWithSettings,
+    });
+    setTree(rebuilt.state.tree);
+  }, [configWithSettings]);
+
   return (
-    // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
     <div>
       <div className={cn("cal-query-builder", className)}>
         <Query
-          {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
-          value={queryBuilderState.state.tree}
-          onChange={handleChange}
+          {...configWithSettings}
+          value={tree}
+          onChange={onChange}
           renderBuilder={renderBuilder}
         />
       </div>
       <div className="mt-4 text-sm">
-        <MatchingTeamMembers teamId={teamId} queryValue={queryBuilderState.queryValue} />
+        <MatchingTeamMembers teamId={teamId} queryValue={queryValue} />
       </div>
     </div>
   );

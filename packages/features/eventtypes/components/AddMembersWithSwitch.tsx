@@ -1,4 +1,4 @@
-import { useMemo, type ComponentProps, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useCallback, type ComponentProps, type Dispatch, type SetStateAction } from "react";
 import { useFormContext } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import type { Options } from "react-select";
@@ -139,9 +139,9 @@ function MembersSegmentWithToggle({
   className?: string;
 }) {
   const { t } = useLocale();
-  const onQueryValueChange = ({ queryValue }: { queryValue: AttributesQueryValue }) => {
+  const onQueryValueChange = useCallback(({ queryValue }: { queryValue: AttributesQueryValue }) => {
     setRrSegmentQueryValue(queryValue);
-  };
+  }, [setRrSegmentQueryValue]);
   const isPlatform = useIsPlatform();
   return (
     <Controller<FormValues>
@@ -227,12 +227,16 @@ function useSegmentState() {
   const { getValues, setValue, watch } = useFormContext<FormValues>();
   const assignRRMembersUsingSegment = watch("assignRRMembersUsingSegment");
 
-  const setAssignRRMembersUsingSegment = (value: boolean) =>
-    setValue("assignRRMembersUsingSegment", value, { shouldDirty: true });
+  const setAssignRRMembersUsingSegment = useCallback(
+    (value: boolean) => setValue("assignRRMembersUsingSegment", value, { shouldDirty: true }),
+    [setValue]
+  );
 
   const rrSegmentQueryValue = getValues("rrSegmentQueryValue");
-  const setRrSegmentQueryValue = (value: AttributesQueryValue) =>
-    setValue("rrSegmentQueryValue", value, { shouldDirty: true });
+  const setRrSegmentQueryValue = useCallback(
+    (value: AttributesQueryValue) => setValue("rrSegmentQueryValue", value, { shouldDirty: true }),
+    [setValue]
+  );
 
   return {
     assignRRMembersUsingSegment,
