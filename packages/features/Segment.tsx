@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useMemo, useEffect } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
-import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
+import type { ImmutableTree, BuilderProps, Config } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
 
 import {
@@ -43,7 +43,7 @@ function SegmentWithAttributes({
 }) {
   const [queryValue, setQueryValue] = useState(initialQueryValue);
   
-  // SIMPLE APPROACH: Use the exact same pattern as the working route-builder
+  // Use the exact same pattern as the working route-builder
   const config = useMemo(() => 
     withRaqbSettingsAndWidgets({
       config: getQueryBuilderConfigForAttributes({ attributes }),
@@ -51,13 +51,11 @@ function SegmentWithAttributes({
     }), [attributes]
   );
 
-  // Store tree directly in state like the route-builder does
-  const [tree, setTree] = useState<ImmutableTree>(() => 
-    buildStateFromQueryValue({
-      queryValue: queryValue as JsonTree,
-      config,
-    }).state.tree
-  );
+  // Initialize tree with proper config - this should be stable
+  const [tree, setTree] = useState<ImmutableTree>(() => {
+    const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
+    return QbUtils.checkTree(QbUtils.loadTree(queryValue as JsonTree), baseConfig as unknown as Config);
+  });
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
