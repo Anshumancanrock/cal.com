@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -47,18 +47,21 @@ function SegmentWithAttributes({
 
   const [queryValue, setQueryValue] = useState(initialQueryValue);
   
-  // Use immutable tree state to prevent cursor focus loss
-  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = withRaqbSettingsAndWidgets({
-    config: attributesQueryBuilderConfig,
-    configFor: ConfigFor.Attributes,
-  });
+  // Memoize config to prevent recreating on every render (which causes focus loss)
+  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => 
+    withRaqbSettingsAndWidgets({
+      config: attributesQueryBuilderConfig,
+      configFor: ConfigFor.Attributes,
+    }), [attributesQueryBuilderConfig]
+  );
 
-  const initialTree = buildStateFromQueryValue({
-    queryValue: queryValue as JsonTree,
-    config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-  }).state.tree;
-  
-  const [tree, setTree] = useState<ImmutableTree>(initialTree);
+  // Initialize tree state once and keep it stable
+  const [tree, setTree] = useState<ImmutableTree>(() => {
+    return buildStateFromQueryValue({
+      queryValue: queryValue as JsonTree,
+      config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+    }).state.tree;
+  });
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
@@ -71,7 +74,7 @@ function SegmentWithAttributes({
     []
   );
 
-  function onChange(newTree: ImmutableTree) {
+  const onChange = useCallback((newTree: ImmutableTree) => {
     const jsonTree = QbUtils.getTree(newTree) as AttributesQueryValue;
 
     // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. isEqual ensures that we don't end up having infinite re-renders.
@@ -82,7 +85,7 @@ function SegmentWithAttributes({
         queryValue: jsonTree,
       });
     }
-  }
+  }, [queryValue, onQueryValueChange]);
 
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
