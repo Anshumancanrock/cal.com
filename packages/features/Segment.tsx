@@ -41,25 +41,22 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const attributesQueryBuilderConfig = getQueryBuilderConfigForAttributes({
+  const attributesQueryBuilderConfig = useMemo(() => getQueryBuilderConfigForAttributes({
     attributes,
-  });
+  }), [attributes]);
 
   const [queryValue, setQueryValue] = useState(initialQueryValue);
-  const [queryBuilderState, setQueryBuilderState] = useState(() => {
-    const config = withRaqbSettingsAndWidgets({
-      config: attributesQueryBuilderConfig,
-      configFor: ConfigFor.Attributes,
-    });
-    return buildStateFromQueryValue({
-      queryValue: queryValue as JsonTree,
-      config,
-    });
-  });
-
-  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = withRaqbSettingsAndWidgets({
+  
+  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => withRaqbSettingsAndWidgets({
     config: attributesQueryBuilderConfig,
     configFor: ConfigFor.Attributes,
+  }), [attributesQueryBuilderConfig]);
+
+  const [queryBuilderState, setQueryBuilderState] = useState(() => {
+    return buildStateFromQueryValue({
+      queryValue: queryValue as JsonTree,
+      config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+    });
   });
 
   const renderBuilder = useCallback(
@@ -80,7 +77,7 @@ function SegmentWithAttributes({
         <Query
           {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
           value={queryBuilderState.state.tree}
-          onChange={(immutableTree) => {
+          onChange={useCallback((immutableTree) => {
             const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
             
             // Update stable state for RAQB
@@ -100,7 +97,7 @@ function SegmentWithAttributes({
                 queryValue: jsonTree,
               });
             }
-          }}
+          }, [attributesQueryBuilderConfigWithRaqbSettingsAndWidgets, queryValue, onQueryValueChange])}
           renderBuilder={renderBuilder}
         />
       </div>
