@@ -54,7 +54,9 @@ function SegmentWithAttributes({
   // Initialize tree with proper config - this should be stable
   const [tree, setTree] = useState<ImmutableTree>(() => {
     const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
-    return QbUtils.checkTree(QbUtils.loadTree(queryValue as JsonTree), baseConfig as unknown as Config);
+    // Handle null queryValue by creating an empty tree
+    const queryValueToUse = queryValue || { id: QbUtils.uuid(), type: "group" as const };
+    return QbUtils.checkTree(QbUtils.loadTree(queryValueToUse as JsonTree), baseConfig as unknown as Config);
   });
 
   const renderBuilder = useCallback(
