@@ -43,31 +43,21 @@ function SegmentWithAttributes({
 }) {
   const [queryValue, setQueryValue] = useState(initialQueryValue);
   
-  // Memoize the base config to prevent recreation
-  const attributesQueryBuilderConfig = useMemo(() => 
-    getQueryBuilderConfigForAttributes({ attributes }), 
-    [attributes]
-  );
-  
-  // Memoize config to prevent recreating on every render (which causes focus loss)
-  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => 
+  // SIMPLE APPROACH: Use the exact same pattern as the working route-builder
+  const config = useMemo(() => 
     withRaqbSettingsAndWidgets({
-      config: attributesQueryBuilderConfig,
+      config: getQueryBuilderConfigForAttributes({ attributes }),
       configFor: ConfigFor.Attributes,
-    }), [attributesQueryBuilderConfig]
+    }), [attributes]
   );
 
-  // Initialize tree state - will be properly set by useEffect
-  const [tree, setTree] = useState<ImmutableTree | null>(null);
-
-  // Update tree when config or queryValue changes
-  useEffect(() => {
-    const newTree = buildStateFromQueryValue({
+  // Store tree directly in state like the route-builder does
+  const [tree, setTree] = useState<ImmutableTree>(() => 
+    buildStateFromQueryValue({
       queryValue: queryValue as JsonTree,
-      config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-    }).state.tree;
-    setTree(newTree);
-  }, [queryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
+      config,
+    }).state.tree
+  );
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
@@ -93,17 +83,12 @@ function SegmentWithAttributes({
     }
   }, [queryValue, onQueryValueChange]);
 
-  // Don't render until tree is initialized
-  if (!tree) {
-    return <div>Loading...</div>;
-  }
-
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
     <div>
       <div className={cn("cal-query-builder", className)}>
         <Query
-          {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
+          {...config}
           value={tree}
           onChange={onChange}
           renderBuilder={renderBuilder}
