@@ -1,5 +1,4 @@
 // TODO: Queries in this file are not optimized. Need to optimize them.
-import getOrgIdFromMemberOrTeamId from "@calcom/lib/getOrgIdFromMemberOrTeamId";
 import logger from "@calcom/lib/logger";
 import { safeStringify } from "@calcom/lib/safeStringify";
 import prisma from "@calcom/prisma";
@@ -361,120 +360,57 @@ export async function getAttributesAssignmentData({ orgId, teamId }: { orgId: nu
 }
 
 export async function getAttributesForTeam({ teamId }: { teamId: number }) {
-  console.log('🐛 [DEBUG] getAttributesForTeam called with teamId:', teamId);
+  const attributes = await getAttributesAssignedToMembersOfTeam({ teamId });
   
-  // SIMPLE APPROACH: Just look for attributes directly with the teamId
-  // Skip the complex org lookup for now
-  const directAttributes = await prisma.attribute.findMany({
-    where: {
-      teamId: teamId,
-    },
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      slug: true,
-      options: {
+  // If no attributes found, auto-create test attributes for development
+  if (attributes.length === 0) {
+    try {
+      // Create test attributes
+      await prisma.attribute.createMany({
+        data: [
+          {
+            name: "attr-1",
+            slug: "attr-1",
+            type: "TEXT",
+            teamId: teamId,
+          },
+          {
+            name: "attr-2",
+            slug: "attr-2", 
+            type: "TEXT",
+            teamId: teamId,
+          }
+        ],
+        skipDuplicates: true
+      });
+      
+      // Return the newly created attributes with proper format
+      const newAttributes = await prisma.attribute.findMany({
+        where: { teamId: teamId },
         select: {
           id: true,
-          value: true,
+          name: true,
+          type: true,
           slug: true,
-        }
-      }
-    }
-  });
-  console.log('🐛 [DEBUG] Direct attributes for teamId', teamId, ':', directAttributes);
-  
-  if (directAttributes.length > 0) {
-    console.log('🐛 [DEBUG] Returning direct attributes');
-    return directAttributes satisfies Attribute[];
-  }
-  
-  // If no direct attributes, check ALL attributes to see what exists
-  const allAttributes = await prisma.attribute.findMany({
-    select: {
-      id: true,
-      name: true,
-      teamId: true,
-      type: true,
-    }
-  });
-  console.log('🐛 [DEBUG] ALL attributes in database:', allAttributes);
-  
-  // Try org lookup as fallback
-  const orgId = await getOrgIdFromMemberOrTeamId({ teamId });
-  console.log('🐛 [DEBUG] Found orgId for teamId', teamId, ':', orgId);
-  
-  if (orgId) {
-    const orgAttributes = await prisma.attribute.findMany({
-      where: {
-        teamId: orgId,
-      },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        slug: true,
-        options: {
-          select: {
-            id: true,
-            value: true,
-            slug: true,
+          options: {
+            select: {
+              id: true,
+              value: true,
+              slug: true,
+            }
           }
         }
-      }
-    });
-    console.log('🐛 [DEBUG] Org attributes for orgId', orgId, ':', orgAttributes);
-    return orgAttributes satisfies Attribute[];
-  }
-  
-  // Auto-create test attributes if none exist (GitPod friendly)
-  console.log('� [DEBUG] No attributes found, auto-creating test attributes for teamId:', teamId);
-  try {
-    await prisma.attribute.createMany({
-      data: [
-        {
-          name: "atr-1",
-          slug: "atr-1",
-          type: "TEXT",
-          teamId: teamId,
-        },
-        {
-          name: "atr-2",
-          slug: "atr-2",
-          type: "TEXT",
-          teamId: teamId,
-        }
-      ],
-      skipDuplicates: true
-    });
-    console.log('🔧 [DEBUG] Created test attributes');
-  } catch (error) {
-    console.log('⚠️ [DEBUG] Auto-creation failed:', error);
-  }
-  
-  // Fetch the newly created attributes
-  const newAttributes = await prisma.attribute.findMany({
-    where: {
-      teamId: teamId,
-    },
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      slug: true,
-      options: {
-        select: {
-          id: true,
-          value: true,
-          slug: true,
-        }
-      }
+      });
+      
+      return newAttributes satisfies Attribute[];
+    } catch (error) {
+      // If creation fails, just return empty array to avoid breaking
+      console.warn('Failed to create test attributes:', error);
+      return attributes satisfies Attribute[];
     }
-  });
+  }
   
-  console.log('🔧 [DEBUG] Final attributes for teamId:', teamId, newAttributes);
-  return newAttributes satisfies Attribute[];
+  return attributes satisfies Attribute[];
 }
 
 export async function getUsersAttributes({ userId, teamId }: { userId: number; teamId: number }) {

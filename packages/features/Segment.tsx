@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -19,20 +19,12 @@ import cn from "@calcom/ui/classNames";
 
 export type Attributes = RouterOutputs["viewer"]["appRoutingForms"]["getAttributesForTeam"];
 export function useAttributes(teamId: number) {
-  const { data: attributes, isPending, error } = trpc.viewer.appRoutingForms.getAttributesForTeam.useQuery({
+  const { data: attributes, isPending } = trpc.viewer.appRoutingForms.getAttributesForTeam.useQuery({
     teamId,
   });
-  
-  // Temporary debugging
-  console.log('🔍 [DEBUG] useAttributes - teamId:', teamId);
-  console.log('🔍 [DEBUG] useAttributes - attributes:', attributes);
-  console.log('🔍 [DEBUG] useAttributes - error:', error);
-  console.log('🔍 [DEBUG] useAttributes - attributes length:', attributes?.length);
-  
   return {
     attributes,
     isPending,
-    error,
   };
 }
 
@@ -49,42 +41,25 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  // CORE FIX: Store immutable tree directly like route-builder does
-  const [tree, setTree] = useState<ImmutableTree>(() => {
-    // Build config immediately for initialization
-    const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
-    const config = withRaqbSettingsAndWidgets({
-      config: baseConfig,
-      configFor: ConfigFor.Attributes,
-    });
-
-    if (initialQueryValue) {
-      try {
-        const state = buildStateFromQueryValue({
-          queryValue: initialQueryValue as JsonTree,
-          config,
-        });
-        return state.state.tree;
-      } catch (error) {
-        console.error('Error building initial tree:', error);
-      }
-    }
-    
-    // Empty tree fallback
-    const emptyTree = QbUtils.loadTree({});
-    return QbUtils.loadTree(QbUtils.checkTree(emptyTree, config));
+  const attributesQueryBuilderConfig = getQueryBuilderConfigForAttributes({
+    attributes,
   });
 
-  // Stable config for render and onChange
-  const config = useMemo(() => {
-    const baseConfig = getQueryBuilderConfigForAttributes({ attributes });
-    return withRaqbSettingsAndWidgets({
-      config: baseConfig,
-      configFor: ConfigFor.Attributes,
-    });
-  }, [attributes]);
+  const [queryValue, setQueryValue] = useState(initialQueryValue);
+  
+  // Use immutable tree state to prevent cursor focus loss
+  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = withRaqbSettingsAndWidgets({
+    config: attributesQueryBuilderConfig,
+    configFor: ConfigFor.Attributes,
+  });
 
-  // CRITICAL: Stable renderBuilder to prevent Query component recreation
+  const initialTree = buildStateFromQueryValue({
+    queryValue: queryValue as JsonTree,
+    config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+  }).state.tree;
+  
+  const [tree, setTree] = useState<ImmutableTree>(initialTree);
+
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
       <div className="query-builder-container" data-testid="query-builder-container">
@@ -96,28 +71,32 @@ function SegmentWithAttributes({
     []
   );
 
-  // SIMPLE FIX: Direct tree update, no over-engineering
-  const onChange = useCallback((newTree: ImmutableTree) => {
-    setTree(newTree);
+  function onChange(newTree: ImmutableTree) {
     const jsonTree = QbUtils.getTree(newTree) as AttributesQueryValue;
-    onQueryValueChange({
-      queryValue: jsonTree,
-    });
-  }, [onQueryValueChange]);
+
+    // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. isEqual ensures that we don't end up having infinite re-renders.
+    if (!isEqual(jsonTree, queryValue)) {
+      setTree(newTree);
+      setQueryValue(jsonTree);
+      onQueryValueChange({
+        queryValue: jsonTree,
+      });
+    }
+  }
 
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
     <div>
       <div className={cn("cal-query-builder", className)}>
         <Query
-          {...config}
+          {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
           value={tree}
           onChange={onChange}
           renderBuilder={renderBuilder}
         />
       </div>
       <div className="mt-4 text-sm">
-        <MatchingTeamMembers teamId={teamId} queryValue={QbUtils.getTree(tree)} />
+        <MatchingTeamMembers teamId={teamId} queryValue={queryValue} />
       </div>
     </div>
   );
@@ -151,16 +130,6 @@ function MatchingTeamMembers({
       }
     );
 
-  if (!hasValidValue) {
-    return (
-      <div className="border-subtle bg-muted mt-4 space-y-3 rounded-md border p-4">
-        <div className="text-subtle flex items-center text-sm font-medium">
-          <span>{t("no_filter_set")}</span>
-        </div>
-      </div>
-    );
-  }
-
   if (isPending) {
     return (
       <div
@@ -185,14 +154,23 @@ function MatchingTeamMembers({
 
   if (!matchingTeamMembersWithResult) return <span>{t("something_went_wrong")}</span>;
   const { result: matchingTeamMembers } = matchingTeamMembersWithResult;
+  if (!matchingTeamMembers || !queryValue) {
+    return (
+      <div className="border-subtle bg-muted mt-4 space-y-3 rounded-md border p-4">
+        <div className="text-subtle flex items-center text-sm font-medium">
+          <span>{t("no_filter_set")}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-subtle bg-muted mt-4 space-y-3 rounded-md border p-4">
       <div className="text-emphasis flex items-center text-sm font-medium">
-        <span>{t("x_matching_members", { x: matchingTeamMembers?.length ?? 0 })}</span>
+        <span>{t("x_matching_members", { x: matchingTeamMembers.length })}</span>
       </div>
       <ul className="divide-subtle divide-y">
-        {matchingTeamMembers?.map((member) => (
+        {matchingTeamMembers.map((member) => (
           <li key={member.id} className="flex items-center py-2">
             <div className="flex flex-1 items-center space-x-2 text-sm">
               <span className="font-medium">{member.name}</span>
@@ -216,17 +194,11 @@ export function Segment({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const { attributes, isPending, error } = useAttributes(teamId);
+  const { attributes, isPending } = useAttributes(teamId);
   const { t } = useLocale();
   if (isPending) return <span>Loading...</span>;
-  
-  if (error) {
-    console.error("Error fetching attributes:", error);
-    return <span>{t("something_went_wrong")}</span>;
-  }
-  
   if (!attributes) {
-    console.error("No attributes returned");
+    console.log("Error fetching attributes");
     return <span>{t("something_went_wrong")}</span>;
   }
 
