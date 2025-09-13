@@ -19,18 +19,20 @@ import cn from "@calcom/ui/classNames";
 
 export type Attributes = RouterOutputs["viewer"]["appRoutingForms"]["getAttributesForTeam"];
 export function useAttributes(teamId: number) {
-  const { data: attributes, isPending } = trpc.viewer.appRoutingForms.getAttributesForTeam.useQuery({
+  const { data: attributes, isPending, error } = trpc.viewer.appRoutingForms.getAttributesForTeam.useQuery({
     teamId,
   });
   
   // Temporary debugging
   console.log('🔍 [DEBUG] useAttributes - teamId:', teamId);
   console.log('🔍 [DEBUG] useAttributes - attributes:', attributes);
+  console.log('🔍 [DEBUG] useAttributes - error:', error);
   console.log('🔍 [DEBUG] useAttributes - attributes length:', attributes?.length);
   
   return {
     attributes,
     isPending,
+    error,
   };
 }
 
@@ -214,11 +216,17 @@ export function Segment({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const { attributes, isPending } = useAttributes(teamId);
+  const { attributes, isPending, error } = useAttributes(teamId);
   const { t } = useLocale();
   if (isPending) return <span>Loading...</span>;
+  
+  if (error) {
+    console.error("Error fetching attributes:", error);
+    return <span>{t("something_went_wrong")}</span>;
+  }
+  
   if (!attributes) {
-    console.error("Error fetching attributes");
+    console.error("No attributes returned");
     return <span>{t("something_went_wrong")}</span>;
   }
 
