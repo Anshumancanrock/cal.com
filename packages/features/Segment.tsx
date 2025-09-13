@@ -1,12 +1,21 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Builder, Query, Utils as QbUtils } from "react-awesome-query-builder";
+import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
+import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
+import type { JsonTree } from "react-awesome-query-builder";
 
+import {
+  withRaqbSettingsAndWidgets,
+  ConfigFor,
+} from "@calcom/app-store/routing-forms/components/react-awesome-query-builder/config/uiConfig";
+import { getQueryBuilderConfigForAttributes } from "@calcom/app-store/routing-forms/lib/getQueryBuilderConfig";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { isEqual } from "@calcom/lib/isEqual";
+import { buildStateFromQueryValue } from "@calcom/lib/raqb/raqbUtils";
 import type { AttributesQueryValue } from "@calcom/lib/raqb/types";
-import { withRaqbSettingsAndWidgets } from "@calcom/lib/raqb/utils";
 import { trpc, type RouterOutputs } from "@calcom/trpc";
+import cn from "@calcom/ui/classNames";
 
 export type Attributes = RouterOutputs["viewer"]["appRoutingForms"]["getAttributesForTeam"];
 export function useAttributes(teamId: number) {
@@ -32,77 +41,76 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const { t } = useLocale();
+  const attributesQueryBuilderConfig = getQueryBuilderConfigForAttributes({
+    attributes,
+  });
 
-  // Stable UUIDs - THE KEY FIX to prevent re-renders!
+  const [queryValue, setQueryValue] = useState(initialQueryValue);
+  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = withRaqbSettingsAndWidgets({
+    config: attributesQueryBuilderConfig,
+    configFor: ConfigFor.Attributes,
+  });
+
+  const queryBuilderData = buildStateFromQueryValue({
+    queryValue: queryValue as JsonTree,
+    config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+  });
+
+  const renderBuilder = useCallback(
+    (props: BuilderProps) => (
+      <div className="query-builder-container" data-testid="query-builder-container">
+        <div className="query-builder qb-lite">
+          <Builder {...props} />
+        </div>
+      </div>
+    ),
+    []
+  );
+
+  // 🎯 UUID FIX: Stable UUIDs to prevent re-renders
   const stableGroupId = useMemo(() => QbUtils.uuid(), []);
   const stableRuleId = useMemo(() => QbUtils.uuid(), []);
 
-  // RAQB configuration with attributes
-  const config = useMemo(() => {
-    return withRaqbSettingsAndWidgets(
-      attributes.reduce((acc, attribute) => {
-        acc[attribute.id] = {
-          label: attribute.name,
-          type: "text",
-          valueSources: ["value"],
-        };
-        return acc;
-      }, {} as Record<string, any>)
-    );
-  }, [attributes]);
+  function onChange(immutableTree: ImmutableTree) {
+    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
 
-  // Initialize immutable tree from query value or create empty
-  const [tree, setTree] = useState(() => {
-    if (initialQueryValue) {
-      return QbUtils.checkTree(QbUtils.loadTree(initialQueryValue), config);
-    }
-    // Create empty tree with stable UUID
-    return QbUtils.checkTree(QbUtils.loadTree({
-      id: stableGroupId,
-      type: "group",
-      children1: {}
-    }), config);
-  });
-
-  const handleTreeChange = useCallback((newTree: any) => {
-    setTree(newTree);
-    const queryValue = QbUtils.getTree(newTree);
-    
-    // Ensure stable UUIDs in the output
-    if (queryValue && typeof queryValue === 'object') {
-      queryValue.id = stableGroupId;
+    // 🎯 UUID FIX: Ensure stable UUIDs in the output
+    if (jsonTree && typeof jsonTree === 'object') {
+      jsonTree.id = stableGroupId;
       // If there are children, ensure they use stable UUIDs too
-      if (queryValue.children1 && Object.keys(queryValue.children1).length > 0) {
-        const firstChild = Object.values(queryValue.children1)[0];
+      if (jsonTree.children1 && Object.keys(jsonTree.children1).length > 0) {
+        const firstChild = Object.values(jsonTree.children1)[0];
         if (firstChild && typeof firstChild === 'object') {
           const newChildren1: any = {};
           newChildren1[stableRuleId] = firstChild;
-          queryValue.children1 = newChildren1;
+          jsonTree.children1 = newChildren1;
         }
       }
     }
-    
-    onQueryValueChange({ queryValue });
-  }, [onQueryValueChange, stableGroupId, stableRuleId]);
 
-  const renderBuilder = () => (
-    <Query {...config} value={tree} onChange={handleTreeChange} renderBuilder={Builder} />
-  );
-
-  if (!attributes.length) {
-    return (
-      <div className="text-subtle rounded-md border border-subtle bg-muted p-4 text-center text-sm">
-        {t("no_attributes_found")}
-      </div>
-    );
+    // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. 
+    // isEqual ensures that we don't end up having infinite re-renders.
+    if (!isEqual(jsonTree, queryValue)) {
+      setQueryValue(jsonTree);
+      onQueryValueChange({
+        queryValue: jsonTree,
+      });
+    }
   }
 
   return (
-    <div className={className}>
-      <div className="space-y-4">
-        {renderBuilder()}
-        <MatchingTeamMembers teamId={teamId} queryValue={QbUtils.getTree(tree)} />
+    // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
+    <div>
+      <div className={cn("cal-query-builder", className)}>
+        <Query
+          {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
+          value={queryBuilderData.state.tree}
+          onChange={onChange}
+          renderBuilder={renderBuilder}
+        />
+      </div>
+      <div className="mt-4 text-sm">
+        <MatchingTeamMembers teamId={teamId} queryValue={queryValue} />
       </div>
     </div>
   );
@@ -136,6 +144,16 @@ function MatchingTeamMembers({
       }
     );
 
+  if (!hasValidValue) {
+    return (
+      <div className="border-subtle bg-muted mt-4 space-y-3 rounded-md border p-4">
+        <div className="text-subtle flex items-center text-sm font-medium">
+          <span>{t("no_filter_set")}</span>
+        </div>
+      </div>
+    );
+  }
+
   if (isPending) {
     return (
       <div
@@ -160,23 +178,14 @@ function MatchingTeamMembers({
 
   if (!matchingTeamMembersWithResult) return <span>{t("something_went_wrong")}</span>;
   const { result: matchingTeamMembers } = matchingTeamMembersWithResult;
-  if (!matchingTeamMembers || !queryValue) {
-    return (
-      <div className="border-subtle bg-muted mt-4 space-y-3 rounded-md border p-4">
-        <div className="text-subtle flex items-center text-sm font-medium">
-          <span>{t("no_filter_set")}</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="border-subtle bg-muted mt-4 space-y-3 rounded-md border p-4">
       <div className="text-emphasis flex items-center text-sm font-medium">
-        <span>{t("x_matching_members", { x: matchingTeamMembers.length })}</span>
+        <span>{t("x_matching_members", { x: matchingTeamMembers?.length ?? 0 })}</span>
       </div>
       <ul className="divide-subtle divide-y">
-        {matchingTeamMembers.map((member) => (
+        {matchingTeamMembers?.map((member) => (
           <li key={member.id} className="flex items-center py-2">
             <div className="flex flex-1 items-center space-x-2 text-sm">
               <span className="font-medium">{member.name}</span>
@@ -204,7 +213,7 @@ export function Segment({
   const { t } = useLocale();
   if (isPending) return <span>Loading...</span>;
   if (!attributes) {
-    console.log("Error fetching attributes");
+    console.error("Error fetching attributes");
     return <span>{t("something_went_wrong")}</span>;
   }
 
