@@ -45,8 +45,6 @@ function SegmentWithAttributes({
     attributes,
   }), [attributes]);
 
-  const [queryValue, setQueryValue] = useState(initialQueryValue);
-  
   const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => withRaqbSettingsAndWidgets({
     config: attributesQueryBuilderConfig,
     configFor: ConfigFor.Attributes,
@@ -84,19 +82,20 @@ function SegmentWithAttributes({
           onChange={(immutableTree) => {
             const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
             
-            // Update stable state for RAQB
-            setQueryBuilderState({
+            // Update stable state for RAQB and call parent callback
+            const newState = {
               state: {
                 tree: immutableTree,
                 config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
               },
               queryValue: jsonTree,
-            });
+            };
+            
+            setQueryBuilderState(newState);
 
             // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. 
             // isEqual ensures that we don't end up having infinite re-renders.
-            if (!isEqual(jsonTree, queryValue)) {
-              setQueryValue(jsonTree);
+            if (!isEqual(jsonTree, queryBuilderState.queryValue)) {
               onQueryValueChange({
                 queryValue: jsonTree,
               });
@@ -106,7 +105,7 @@ function SegmentWithAttributes({
         />
       </div>
       <div className="mt-4 text-sm">
-        <MatchingTeamMembers teamId={teamId} queryValue={queryValue} />
+        <MatchingTeamMembers teamId={teamId} queryValue={queryBuilderState.queryValue} />
       </div>
     </div>
   );
