@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, memo } from "react";
+import { useCallback, useMemo, useState, useEffect, memo } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -55,14 +55,30 @@ function SegmentWithAttributes({
     [attributesConfig]
   );
 
-  // Use initialQueryValue directly to avoid any state synchronization issues
-  const currentTree = useMemo(() => {
+  // Initialize tree state like routing forms do
+  const [currentTree, setCurrentTree] = useState<ImmutableTree>(() => {
     const state = buildStateFromQueryValue({
       queryValue: (initialQueryValue as JsonTree) ?? null,
       config: configWithSettings,
     });
     return state.state.tree;
-  }, [initialQueryValue, configWithSettings]);
+  });
+
+  // Sync tree when props change - using JSON comparison to prevent infinite loops
+  useEffect(() => {
+    const state = buildStateFromQueryValue({
+      queryValue: (initialQueryValue as JsonTree) ?? null,
+      config: configWithSettings,
+    });
+    const newTree = state.state.tree;
+    const currentTreeJson = JSON.stringify(QbUtils.getTree(currentTree));
+    const newTreeJson = JSON.stringify(QbUtils.getTree(newTree));
+    
+    // Only update if the actual query data changed, not tree references
+    if (currentTreeJson !== newTreeJson) {
+      setCurrentTree(newTree);
+    }
+  }, [initialQueryValue, configWithSettings, currentTree]);
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
@@ -82,6 +98,9 @@ function SegmentWithAttributes({
           {...configWithSettings}
           value={currentTree}
           onChange={(immutableTree, config) => {
+            // Update internal tree state immediately (like routing forms)
+            setCurrentTree(immutableTree);
+            // Then notify parent
             const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
             onQueryValueChange({ queryValue: jsonTree });
           }}
