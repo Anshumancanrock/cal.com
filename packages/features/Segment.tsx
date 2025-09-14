@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef, memo } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -91,14 +91,6 @@ function SegmentWithAttributes({
     }
   }, [initialQueryValue, configWithSettings]);
 
-  useEffect(() => {
-    const rebuilt = buildStateFromQueryValue({
-      queryValue: (queryValue as JsonTree) ?? null,
-      config: configWithSettings,
-    });
-    setTree(rebuilt.state.tree);
-  }, [configWithSettings]);
-
   return (
     <div>
       <div className={cn("cal-query-builder", className)}>
@@ -123,7 +115,7 @@ function SegmentWithAttributes({
   );
 }
 
-function MatchingTeamMembers({
+const MatchingTeamMembers = memo(function MatchingTeamMembers({
   teamId,
   queryValue,
 }: {
@@ -203,7 +195,7 @@ function MatchingTeamMembers({
       </ul>
     </div>
   );
-}
+});
 
 export function Segment({
   teamId,
