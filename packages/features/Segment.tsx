@@ -40,47 +40,39 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  // Stable configs - memoized once
+  // Create configs exactly like routing forms do - memoized properly
   const attributesConfig = useMemo(
     () => getQueryBuilderConfigForAttributes({ attributes }),
     [attributes]
   );
-  
-  const configWithSettings = useMemo(
-    () =>
-      withRaqbSettingsAndWidgets({
-        config: attributesConfig,
-        configFor: ConfigFor.Attributes,
-      }),
-    [attributesConfig]
-  );
 
-  // State management exactly like working routing forms
-  const [treeState, setTreeState] = useState<{ tree: ImmutableTree; config: typeof configWithSettings }>(() => {
+  // State - simple tree management exactly like routing forms
+  const [currentTree, setCurrentTree] = useState<ImmutableTree>(() => {
+    const configWithSettings = withRaqbSettingsAndWidgets({
+      config: attributesConfig,
+      configFor: ConfigFor.Attributes,
+    });
     const state = buildStateFromQueryValue({
       queryValue: (initialQueryValue as JsonTree) ?? null,
       config: configWithSettings,
     });
-    return { tree: state.state.tree, config: configWithSettings };
+    return state.state.tree;
   });
 
-  // Stable ref to prevent infinite loops
-  const lastQueryValueRef = useRef<string>();
-
-  // Sync with parent changes - preventing loops with ref comparison
+  // Sync tree when queryValue changes from parent
   useEffect(() => {
-    const queryValueString = JSON.stringify(initialQueryValue);
-    if (lastQueryValueRef.current !== queryValueString) {
-      const state = buildStateFromQueryValue({
-        queryValue: (initialQueryValue as JsonTree) ?? null,
-        config: configWithSettings,
-      });
-      setTreeState({ tree: state.state.tree, config: configWithSettings });
-      lastQueryValueRef.current = queryValueString;
-    }
-  }, [initialQueryValue, configWithSettings]);
+    const configWithSettings = withRaqbSettingsAndWidgets({
+      config: attributesConfig,
+      configFor: ConfigFor.Attributes,
+    });
+    const state = buildStateFromQueryValue({
+      queryValue: (initialQueryValue as JsonTree) ?? null,
+      config: configWithSettings,
+    });
+    setCurrentTree(state.state.tree);
+  }, [initialQueryValue, attributesConfig]);
 
-  // Stable renderBuilder - never changes
+  // Stable renderBuilder
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
       <div className="query-builder-container" data-testid="query-builder-container">
@@ -92,24 +84,22 @@ function SegmentWithAttributes({
     []
   );
 
-  // Stable onChange handler - exactly like routing forms
-  const handleChange = useCallback((immutableTree: ImmutableTree, config: any) => {
-    // Update internal state immediately (critical for focus preservation)
-    setTreeState({ tree: immutableTree, config });
-    
-    // Extract and send to parent
-    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
-    lastQueryValueRef.current = JSON.stringify(jsonTree);
-    onQueryValueChange({ queryValue: jsonTree });
-  }, [onQueryValueChange]);
-
   return (
     <div>
       <div className={cn("cal-query-builder", className)}>
         <Query
-          {...configWithSettings}
-          value={treeState.tree}
-          onChange={handleChange}
+          {...withRaqbSettingsAndWidgets({
+            config: attributesConfig,
+            configFor: ConfigFor.Attributes,
+          })}
+          value={currentTree}
+          onChange={(immutableTree, config) => {
+            // Update state immediately like routing forms
+            setCurrentTree(immutableTree);
+            // Send to parent
+            const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+            onQueryValueChange({ queryValue: jsonTree });
+          }}
           renderBuilder={renderBuilder}
         />
       </div>
