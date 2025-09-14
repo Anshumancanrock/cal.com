@@ -55,21 +55,13 @@ function SegmentWithAttributes({
     [attributesConfig]
   );
 
-  const [currentTree, setCurrentTree] = useState<ImmutableTree>(() => {
+  // Use initialQueryValue directly to avoid any state synchronization issues
+  const currentTree = useMemo(() => {
     const state = buildStateFromQueryValue({
       queryValue: (initialQueryValue as JsonTree) ?? null,
       config: configWithSettings,
     });
     return state.state.tree;
-  });
-
-  // Update tree when props change (like routing forms parent state management)
-  useEffect(() => {
-    const state = buildStateFromQueryValue({
-      queryValue: (initialQueryValue as JsonTree) ?? null,
-      config: configWithSettings,
-    });
-    setCurrentTree(state.state.tree);
   }, [initialQueryValue, configWithSettings]);
 
   const renderBuilder = useCallback(
@@ -90,7 +82,6 @@ function SegmentWithAttributes({
           {...configWithSettings}
           value={currentTree}
           onChange={(immutableTree, config) => {
-            setCurrentTree(immutableTree);
             const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
             onQueryValueChange({ queryValue: jsonTree });
           }}

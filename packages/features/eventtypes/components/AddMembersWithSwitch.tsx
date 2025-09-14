@@ -143,30 +143,27 @@ function MembersSegmentWithToggle({
     setRrSegmentQueryValue(queryValue);
   }, [setRrSegmentQueryValue]);
   const isPlatform = useIsPlatform();
+  
+  // Remove Controller completely - it's causing DOM reconstruction
   return (
-    <Controller<FormValues>
-      name="assignRRMembersUsingSegment"
-      render={() => (
-        <SettingsToggle
-          noIndentation
-          data-testid="segment-toggle"
-          title={t("filter_by_attributes")}
-          labelClassName="mt-0.5 font-normal"
-          checked={assignRRMembersUsingSegment}
-          onCheckedChange={(active) => {
-            setAssignRRMembersUsingSegment(active);
-          }}>
-          {!isPlatform && (
-            <Segment
-              teamId={teamId}
-              queryValue={rrSegmentQueryValue}
-              onQueryValueChange={onQueryValueChange}
-              className={className}
-            />
-          )}
-        </SettingsToggle>
+    <SettingsToggle
+      noIndentation
+      data-testid="segment-toggle"
+      title={t("filter_by_attributes")}
+      labelClassName="mt-0.5 font-normal"
+      checked={assignRRMembersUsingSegment}
+      onCheckedChange={(active) => {
+        setAssignRRMembersUsingSegment(active);
+      }}>
+      {!isPlatform && (
+        <Segment
+          teamId={teamId}
+          queryValue={rrSegmentQueryValue}
+          onQueryValueChange={onQueryValueChange}
+          className={className}
+        />
       )}
-    />
+    </SettingsToggle>
   );
 }
 
