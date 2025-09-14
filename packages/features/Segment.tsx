@@ -41,11 +41,11 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  // 1) Stable RAQB config
   const attributesConfig = useMemo(
     () => getQueryBuilderConfigForAttributes({ attributes }),
     [attributes]
   );
+  
   const configWithSettings = useMemo(
     () =>
       withRaqbSettingsAndWidgets({
@@ -55,7 +55,6 @@ function SegmentWithAttributes({
     [attributesConfig]
   );
 
-  // 2) Manage ImmutableTree in state; derive JSON for external consumers
   const initialState = useMemo(
     () =>
       buildStateFromQueryValue({
@@ -70,8 +69,6 @@ function SegmentWithAttributes({
     initialState.queryValue as AttributesQueryValue
   );
 
-
-
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
       <div className="query-builder-container" data-testid="query-builder-container">
@@ -83,7 +80,6 @@ function SegmentWithAttributes({
     []
   );
 
-  // 3) RAQB onChange: update tree in-place and propagate JSON only when changed
   const onChange = useCallback(
     (immutableTree: ImmutableTree) => {
       setTree(immutableTree);
@@ -96,7 +92,6 @@ function SegmentWithAttributes({
     [onQueryValueChange, queryValue]
   );
 
-  // 4) If parent provides a new queryValue, rebuild tree accordingly
   useEffect(() => {
     if (initialQueryValue && !isEqual(initialQueryValue, queryValue)) {
       const rebuilt = buildStateFromQueryValue({
@@ -106,9 +101,8 @@ function SegmentWithAttributes({
       setTree(rebuilt.state.tree);
       setQueryValue(rebuilt.queryValue as AttributesQueryValue);
     }
-  }, [initialQueryValue, configWithSettings, queryValue]);
+  }, [initialQueryValue, configWithSettings]);
 
-  // 5) If config changes (attributes updated), rebuild tree from current JSON
   useEffect(() => {
     const rebuilt = buildStateFromQueryValue({
       queryValue: (queryValue as JsonTree) ?? null,
@@ -231,7 +225,6 @@ export function Segment({
   const { t } = useLocale();
   if (isPending) return <span>Loading...</span>;
   if (!attributes) {
-    console.error("Error fetching attributes");
     return <span>{t("something_went_wrong")}</span>;
   }
 
