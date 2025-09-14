@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -68,7 +68,7 @@ function SegmentWithAttributes({
   const [queryValue, setQueryValue] = useState<AttributesQueryValue>(
     initialState.queryValue as AttributesQueryValue
   );
-
+  
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
       <div className="query-builder-container" data-testid="query-builder-container">
@@ -78,18 +78,6 @@ function SegmentWithAttributes({
       </div>
     ),
     []
-  );
-
-  const onChange = useCallback(
-    (immutableTree: ImmutableTree) => {
-      setTree(immutableTree);
-      const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
-      if (!isEqual(jsonTree, queryValue)) {
-        setQueryValue(jsonTree);
-        onQueryValueChange({ queryValue: jsonTree });
-      }
-    },
-    [onQueryValueChange, queryValue]
   );
 
   useEffect(() => {
@@ -117,7 +105,14 @@ function SegmentWithAttributes({
         <Query
           {...configWithSettings}
           value={tree}
-          onChange={onChange}
+          onChange={(immutableTree) => {
+            setTree(immutableTree);
+            const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+            if (!isEqual(jsonTree, queryValue)) {
+              setQueryValue(jsonTree);
+              onQueryValueChange({ queryValue: jsonTree });
+            }
+          }}
           renderBuilder={renderBuilder}
         />
       </div>
