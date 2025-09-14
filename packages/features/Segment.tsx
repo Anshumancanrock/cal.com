@@ -64,11 +64,6 @@ function SegmentWithAttributes({
     [configWithSettings, initialQueryValue]
   );
 
-  const [tree, setTree] = useState<ImmutableTree>(initialState.state.tree);
-  const [queryValue, setQueryValue] = useState<AttributesQueryValue>(
-    initialState.queryValue as AttributesQueryValue
-  );
-  
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
       <div className="query-builder-container" data-testid="query-builder-container">
@@ -80,36 +75,21 @@ function SegmentWithAttributes({
     []
   );
 
-  useEffect(() => {
-    if (initialQueryValue && !isEqual(initialQueryValue, queryValue)) {
-      const rebuilt = buildStateFromQueryValue({
-        queryValue: initialQueryValue as JsonTree,
-        config: configWithSettings,
-      });
-      setTree(rebuilt.state.tree);
-      setQueryValue(rebuilt.queryValue as AttributesQueryValue);
-    }
-  }, [initialQueryValue, configWithSettings]);
-
   return (
     <div>
       <div className={cn("cal-query-builder", className)}>
         <Query
           {...configWithSettings}
-          value={tree}
+          value={initialState.state.tree}
           onChange={(immutableTree, config) => {
-            setTree(immutableTree);
             const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
-            if (!isEqual(jsonTree, queryValue)) {
-              setQueryValue(jsonTree);
-              onQueryValueChange({ queryValue: jsonTree });
-            }
+            onQueryValueChange({ queryValue: jsonTree });
           }}
           renderBuilder={renderBuilder}
         />
       </div>
       <div className="mt-4 text-sm">
-        <MatchingTeamMembers teamId={teamId} queryValue={queryValue} />
+        <MatchingTeamMembers teamId={teamId} queryValue={initialQueryValue} />
       </div>
     </div>
   );
