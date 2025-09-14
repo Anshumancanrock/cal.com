@@ -226,16 +226,16 @@ function getAssignmentState({
 function useSegmentState() {
   const { getValues, setValue, watch } = useFormContext<FormValues>();
   const assignRRMembersUsingSegment = watch("assignRRMembersUsingSegment");
+  const rrSegmentQueryValue = watch("rrSegmentQueryValue"); // ✅ Use watch for stable reference
 
   const setAssignRRMembersUsingSegment = useCallback(
     (value: boolean) => setValue("assignRRMembersUsingSegment", value, { shouldDirty: true }),
-    [setValue]
+    [] // ✅ Remove setValue dependency - it's stable in RHF
   );
 
-  const rrSegmentQueryValue = getValues("rrSegmentQueryValue");
   const setRrSegmentQueryValue = useCallback(
     (value: AttributesQueryValue) => setValue("rrSegmentQueryValue", value, { shouldDirty: true }),
-    [setValue]
+    [] // ✅ Remove setValue dependency - it's stable in RHF
   );
 
   return {
