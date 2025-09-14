@@ -84,6 +84,19 @@ function SegmentWithAttributes({
     []
   );
 
+  // Use ref to avoid onChange recreation when onQueryValueChange prop changes
+  const onQueryValueChangeRef = useRef(onQueryValueChange);
+  onQueryValueChangeRef.current = onQueryValueChange;
+
+  // Stable onChange that never changes - critical for focus preservation
+  const stableOnChange = useCallback((immutableTree: ImmutableTree, config: any) => {
+    // Update state immediately like routing forms
+    setCurrentTree(immutableTree);
+    // Send to parent using current ref value
+    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+    onQueryValueChangeRef.current({ queryValue: jsonTree });
+  }, []);
+
   return (
     <div>
       <div className={cn("cal-query-builder", className)}>
@@ -93,13 +106,7 @@ function SegmentWithAttributes({
             configFor: ConfigFor.Attributes,
           })}
           value={currentTree}
-          onChange={(immutableTree, config) => {
-            // Update state immediately like routing forms
-            setCurrentTree(immutableTree);
-            // Send to parent
-            const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
-            onQueryValueChange({ queryValue: jsonTree });
-          }}
+          onChange={stableOnChange}
           renderBuilder={renderBuilder}
         />
       </div>
