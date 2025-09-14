@@ -1,6 +1,5 @@
 import { useMemo, useCallback, type ComponentProps, type Dispatch, type SetStateAction } from "react";
 import { useFormContext } from "react-hook-form";
-import { Controller } from "react-hook-form";
 import type { Options } from "react-select";
 
 import { AddMembersWithSwitchPlatformWrapper } from "@calcom/atoms/add-members-switch/AddMembersWithSwitchPlatformWrapper";
