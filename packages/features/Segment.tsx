@@ -97,7 +97,7 @@ function SegmentWithAttributes({
         <Query
           {...configWithSettings}
           value={tree}
-          onChange={(immutableTree) => {
+          onChange={(immutableTree, config) => {
             setTree(immutableTree);
             const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
             if (!isEqual(jsonTree, queryValue)) {
