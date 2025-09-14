@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect, memo } from "react";
+import { useCallback, useMemo, useState, useEffect, memo, useRef } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -11,7 +11,6 @@ import {
 } from "@calcom/app-store/routing-forms/components/react-awesome-query-builder/config/uiConfig";
 import { getQueryBuilderConfigForAttributes } from "@calcom/app-store/routing-forms/lib/getQueryBuilderConfig";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
-import { isEqual } from "@calcom/lib/isEqual";
 import { buildStateFromQueryValue } from "@calcom/lib/raqb/raqbUtils";
 import type { AttributesQueryValue } from "@calcom/lib/raqb/types";
 import { trpc, type RouterOutputs } from "@calcom/trpc";
@@ -41,6 +40,7 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
+  // Stable configs - memoized once
   const attributesConfig = useMemo(
     () => getQueryBuilderConfigForAttributes({ attributes }),
     [attributes]
@@ -55,31 +55,32 @@ function SegmentWithAttributes({
     [attributesConfig]
   );
 
-  // Initialize tree state like routing forms do
-  const [currentTree, setCurrentTree] = useState<ImmutableTree>(() => {
+  // State management exactly like working routing forms
+  const [treeState, setTreeState] = useState<{ tree: ImmutableTree; config: typeof configWithSettings }>(() => {
     const state = buildStateFromQueryValue({
       queryValue: (initialQueryValue as JsonTree) ?? null,
       config: configWithSettings,
     });
-    return state.state.tree;
+    return { tree: state.state.tree, config: configWithSettings };
   });
 
-  // Sync tree when props change - using JSON comparison to prevent infinite loops
-  useEffect(() => {
-    const state = buildStateFromQueryValue({
-      queryValue: (initialQueryValue as JsonTree) ?? null,
-      config: configWithSettings,
-    });
-    const newTree = state.state.tree;
-    const currentTreeJson = JSON.stringify(QbUtils.getTree(currentTree));
-    const newTreeJson = JSON.stringify(QbUtils.getTree(newTree));
-    
-    // Only update if the actual query data changed, not tree references
-    if (currentTreeJson !== newTreeJson) {
-      setCurrentTree(newTree);
-    }
-  }, [initialQueryValue, configWithSettings, currentTree]);
+  // Stable ref to prevent infinite loops
+  const lastQueryValueRef = useRef<string>();
 
+  // Sync with parent changes - preventing loops with ref comparison
+  useEffect(() => {
+    const queryValueString = JSON.stringify(initialQueryValue);
+    if (lastQueryValueRef.current !== queryValueString) {
+      const state = buildStateFromQueryValue({
+        queryValue: (initialQueryValue as JsonTree) ?? null,
+        config: configWithSettings,
+      });
+      setTreeState({ tree: state.state.tree, config: configWithSettings });
+      lastQueryValueRef.current = queryValueString;
+    }
+  }, [initialQueryValue, configWithSettings]);
+
+  // Stable renderBuilder - never changes
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
       <div className="query-builder-container" data-testid="query-builder-container">
@@ -91,19 +92,24 @@ function SegmentWithAttributes({
     []
   );
 
+  // Stable onChange handler - exactly like routing forms
+  const handleChange = useCallback((immutableTree: ImmutableTree, config: any) => {
+    // Update internal state immediately (critical for focus preservation)
+    setTreeState({ tree: immutableTree, config });
+    
+    // Extract and send to parent
+    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+    lastQueryValueRef.current = JSON.stringify(jsonTree);
+    onQueryValueChange({ queryValue: jsonTree });
+  }, [onQueryValueChange]);
+
   return (
     <div>
       <div className={cn("cal-query-builder", className)}>
         <Query
           {...configWithSettings}
-          value={currentTree}
-          onChange={(immutableTree, config) => {
-            // Update internal tree state immediately (like routing forms)
-            setCurrentTree(immutableTree);
-            // Then notify parent
-            const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
-            onQueryValueChange({ queryValue: jsonTree });
-          }}
+          value={treeState.tree}
+          onChange={handleChange}
           renderBuilder={renderBuilder}
         />
       </div>
