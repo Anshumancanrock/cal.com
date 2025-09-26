@@ -12,6 +12,7 @@ import { getBookerBaseUrl } from "@calcom/lib/getBookerUrl/server";
 import logger from "@calcom/lib/logger";
 import { safeStringify } from "@calcom/lib/safeStringify";
 import { getTranslation } from "@calcom/lib/server/i18n";
+import { shouldHideBrandingForEvent } from "@calcom/lib/hideBranding";
 import { getTimeFormatStringFromUserTimeFormat } from "@calcom/lib/timeFormat";
 import prisma from "@calcom/prisma";
 import { SchedulingType, WorkflowActions, WorkflowTemplates } from "@calcom/prisma/enums";
@@ -34,6 +35,57 @@ import type { VariablesType } from "../lib/reminders/templates/customTemplate";
 import customTemplate from "../lib/reminders/templates/customTemplate";
 import emailRatingTemplate from "../lib/reminders/templates/emailRatingTemplate";
 import emailReminderTemplate from "../lib/reminders/templates/emailReminderTemplate";
+
+/**
+ * Helper function to determine if branding should be hidden for a booking
+ * Uses shouldHideBrandingForEvent to account for organization-level settings
+ */
+async function getBrandingDisabled(booking: {
+  eventType?: {
+    id?: number;
+    team?: {
+      hideBranding?: boolean | null;
+      parentId?: number | null;
+      parent?: {
+        hideBranding?: boolean | null;
+      } | null;
+    } | null;
+    owner?: {
+      id: number;
+      hideBranding: boolean | null;
+    } | null;
+  } | null;
+  user?: {
+    hideBranding?: boolean | null;
+  } | null;
+}): Promise<boolean> {
+  if (!booking.eventType) {
+    return !!booking.user?.hideBranding;
+  }
+
+  try {
+    return await shouldHideBrandingForEvent({
+      eventTypeId: booking.eventType.id ?? 0,
+      team: booking.eventType.team ? {
+        hideBranding: booking.eventType.team.hideBranding ?? null,
+        parent: booking.eventType.team.parent ? {
+          hideBranding: booking.eventType.team.parent.hideBranding ?? null
+        } : null
+      } : null,
+      owner: booking.eventType.owner ? {
+        id: booking.eventType.owner.id,
+        hideBranding: booking.eventType.owner.hideBranding
+      } : null,
+      organizationId: booking.eventType.team?.parentId ?? null
+    });
+  } catch (error) {
+    // Fallback to the old logic if there's an error
+    logger.error('Error in getBrandingDisabled:', error);
+    return booking.eventType?.team
+      ? !!booking.eventType?.team?.hideBranding
+      : !!booking.user?.hideBranding;
+  }
+}
 
 export async function handler(req: NextRequest) {
   const apiKey = req.headers.get("authorization") || req.nextUrl.searchParams.get("apiKey");
@@ -226,9 +278,7 @@ export async function handler(req: NextRequest) {
             ),
           };
           const emailLocale = locale || "en";
-          const brandingDisabled = reminder.booking.eventType?.team
-            ? !!reminder.booking.eventType?.team?.hideBranding
-            : !!reminder.booking.user?.hideBranding;
+          const brandingDisabled = await getBrandingDisabled(reminder.booking);
 
           const emailSubject = customTemplate(
             reminder.workflowStep.emailSubject || "",
@@ -254,9 +304,7 @@ export async function handler(req: NextRequest) {
               getTimeFormatStringFromUserTimeFormat(reminder.booking.user?.timeFormat)
             ).text.length === 0;
         } else if (reminder.workflowStep.template === WorkflowTemplates.REMINDER) {
-          const brandingDisabled = reminder.booking.eventType?.team
-            ? !!reminder.booking.eventType?.team?.hideBranding
-            : !!reminder.booking.user?.hideBranding;
+          const brandingDisabled = await getBrandingDisabled(reminder.booking);
           emailContent = emailReminderTemplate({
             isEditingMode: false,
             locale: reminder.booking.user?.locale || "en",
@@ -414,9 +462,7 @@ export async function handler(req: NextRequest) {
 
         const emailBodyEmpty = false;
 
-        const brandingDisabled = reminder.booking.eventType?.team
-          ? !!reminder.booking.eventType?.team?.hideBranding
-          : !!reminder.booking.user?.hideBranding;
+        const brandingDisabled = await getBrandingDisabled(reminder.booking);
 
         emailContent = emailReminderTemplate({
           isEditingMode: false,

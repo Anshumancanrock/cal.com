@@ -603,7 +603,20 @@ export async function handleWorkflowsUpdate({
       eventType: { slug: eventType.slug },
       bookerUrl,
     },
-    hideBranding: !!eventType?.owner?.hideBranding,
+    hideBranding: await shouldHideBrandingForEvent({
+      eventTypeId: eventType?.id ?? 0,
+      team: eventType?.team ? {
+        hideBranding: eventType.team.hideBranding ?? null,
+        parent: eventType.team.parent ? {
+          hideBranding: eventType.team.parent.hideBranding ?? null
+        } : null
+      } : null,
+      owner: eventType?.owner ? {
+        id: eventType.owner.id,
+        hideBranding: eventType.owner.hideBranding
+      } : null,
+      organizationId: eventType?.team?.parentId ?? null
+    }),
   });
 }
 

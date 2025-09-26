@@ -55,6 +55,7 @@ import { getErrorFromUnknown } from "@calcom/lib/errors";
 import { extractBaseEmail } from "@calcom/lib/extract-base-email";
 import { getBookerBaseUrl } from "@calcom/lib/getBookerUrl/server";
 import getOrgIdFromMemberOrTeamId from "@calcom/lib/getOrgIdFromMemberOrTeamId";
+import { shouldHideBrandingForEvent } from "@calcom/lib/hideBranding";
 import { getTeamIdFromEventType } from "@calcom/lib/getTeamIdFromEventType";
 import { HttpError } from "@calcom/lib/http-error";
 import type { CheckBookingLimitsService } from "@calcom/lib/intervalLimits/server/checkBookingLimits";
@@ -420,6 +421,37 @@ function formatAvailabilitySnapshot(data: {
       end: end.toISOString(),
     })),
   };
+}
+
+/**
+ * Helper to determine if branding should be hidden for an event type using the comprehensive logic
+ */
+async function getHideBrandingForEventType(eventType: {
+  id?: number;
+  owner?: { id: number; hideBranding: boolean | null } | null;
+  team?: { hideBranding?: boolean | null; parentId?: number | null; parent?: { hideBranding?: boolean | null } | null } | null;
+}): Promise<boolean> {
+  if (!eventType) return false;
+
+  try {
+    return await shouldHideBrandingForEvent({
+      eventTypeId: eventType.id ?? 0,
+      team: eventType.team ? {
+        hideBranding: eventType.team.hideBranding ?? null,
+        parent: eventType.team.parent ? {
+          hideBranding: eventType.team.parent.hideBranding ?? null
+        } : null
+      } : null,
+      owner: eventType.owner ? {
+        id: eventType.owner.id,
+        hideBranding: eventType.owner.hideBranding
+      } : null,
+      organizationId: eventType.team?.parentId ?? null
+    });
+  } catch (error) {
+    logger.error('Error in getHideBrandingForEventType:', error);
+    return !!eventType?.owner?.hideBranding;
+  }
 }
 
 async function handler(
@@ -2141,7 +2173,7 @@ async function handler(
           workflows,
           smsReminderNumber: smsReminderNumber || null,
           calendarEvent: calendarEventForWorkflow,
-          hideBranding: !!eventType.owner?.hideBranding,
+          hideBranding: await getHideBrandingForEventType(eventType),
           seatReferenceUid: evt.attendeeSeatId,
           isDryRun,
           triggers: [WorkflowTriggerEvents.BOOKING_PAYMENT_INITIATED],
@@ -2322,7 +2354,7 @@ async function handler(
       evt: evtWithMetadata,
       workflows,
       requiresConfirmation: !isConfirmedByDefault,
-      hideBranding: !!eventType.owner?.hideBranding,
+      hideBranding: await getHideBrandingForEventType(eventType),
       seatReferenceUid: evt.attendeeSeatId,
       isPlatformNoEmail: noEmail && Boolean(platformClientId),
       isDryRun,
@@ -2334,7 +2366,7 @@ async function handler(
       workflows,
       smsReminderNumber: smsReminderNumber || null,
       calendarEvent: evtWithMetadata,
-      hideBranding: !!eventType.owner?.hideBranding,
+      hideBranding: await getHideBrandingForEventType(eventType),
       seatReferenceUid: evt.attendeeSeatId,
       isDryRun,
       isConfirmedByDefault,

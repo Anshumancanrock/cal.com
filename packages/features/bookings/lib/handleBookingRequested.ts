@@ -4,6 +4,7 @@ import type { Workflow } from "@calcom/features/ee/workflows/lib/types";
 import getWebhooks from "@calcom/features/webhooks/lib/getWebhooks";
 import sendPayload from "@calcom/features/webhooks/lib/sendOrSchedulePayload";
 import getOrgIdFromMemberOrTeamId from "@calcom/lib/getOrgIdFromMemberOrTeamId";
+import { shouldHideBrandingForEvent } from "@calcom/lib/hideBranding";
 import logger from "@calcom/lib/logger";
 import { safeStringify } from "@calcom/lib/safeStringify";
 import { WorkflowService } from "@calcom/lib/server/service/workflows";
@@ -106,7 +107,20 @@ export async function handleBookingRequested(args: {
       await WorkflowService.scheduleWorkflowsFilteredByTriggerEvent({
         workflows,
         smsReminderNumber: booking.smsReminderNumber,
-        hideBranding: !!booking.eventType?.owner?.hideBranding,
+        hideBranding: await shouldHideBrandingForEvent({
+          eventTypeId: booking.eventType?.id ?? 0,
+          team: booking.eventType?.team ? {
+            hideBranding: booking.eventType.team.hideBranding ?? null,
+            parent: booking.eventType.team.parent ? {
+              hideBranding: booking.eventType.team.parent.hideBranding ?? null
+            } : null
+          } : null,
+          owner: booking.eventType?.owner ? {
+            id: booking.eventType.owner.id,
+            hideBranding: booking.eventType.owner.hideBranding
+          } : null,
+          organizationId: booking.eventType?.team?.parentId ?? null
+        }),
         calendarEvent: {
           ...evt,
           bookerUrl: evt.bookerUrl as string,

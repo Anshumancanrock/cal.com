@@ -353,7 +353,20 @@ async function handler(input: CancelBookingInput) {
         },
       },
     },
-    hideBranding: !!bookingToDelete.eventType?.owner?.hideBranding,
+    hideBranding: await shouldHideBrandingForEvent({
+      eventTypeId: bookingToDelete.eventType?.id ?? 0,
+      team: bookingToDelete.eventType?.team ? {
+        hideBranding: bookingToDelete.eventType.team.hideBranding ?? null,
+        parent: bookingToDelete.eventType.team.parent ? {
+          hideBranding: bookingToDelete.eventType.team.parent.hideBranding ?? null
+        } : null
+      } : null,
+      owner: bookingToDelete.eventType?.owner ? {
+        id: bookingToDelete.eventType.owner.id,
+        hideBranding: bookingToDelete.eventType.owner.hideBranding
+      } : null,
+      organizationId: bookingToDelete.eventType?.team?.parentId ?? null
+    }),
   });
 
   let updatedBookings: {
