@@ -941,16 +941,33 @@ export const EventTeamAssignmentTab = memo(({
 }, (prevProps, nextProps) => {
   // Custom comparison: only compare IDs and lengths, not full objects
   // This prevents re-renders when parent passes new object references with same data
-  return (
-    prevProps.team.id === nextProps.team.id &&
-    prevProps.eventType.id === nextProps.eventType.id &&
-    prevProps.eventType.schedulingType === nextProps.eventType.schedulingType &&
-    prevProps.teamMembers.length === nextProps.teamMembers.length &&
-    prevProps.orgId === nextProps.orgId &&
-    prevProps.isSegmentApplicable === nextProps.isSegmentApplicable
-    // Intentionally not comparing teamMembers array deeply or customClassNames
-    // These cause unnecessary re-renders even when data is the same
-  );
+  
+  const teamIdSame = prevProps.team.id === nextProps.team.id;
+  const eventTypeIdSame = prevProps.eventType.id === nextProps.eventType.id;
+  const schedulingTypeSame = prevProps.eventType.schedulingType === nextProps.eventType.schedulingType;
+  const teamMembersLengthSame = prevProps.teamMembers.length === nextProps.teamMembers.length;
+  const orgIdSame = prevProps.orgId === nextProps.orgId;
+  const isSegmentApplicableSame = prevProps.isSegmentApplicable === nextProps.isSegmentApplicable;
+  
+  const allSame = teamIdSame && eventTypeIdSame && schedulingTypeSame && 
+                  teamMembersLengthSame && orgIdSame && isSegmentApplicableSame;
+  
+  if (!allSame) {
+    console.log("[React.memo comparison] Props changed:", {
+      teamIdSame,
+      eventTypeIdSame,
+      schedulingTypeSame,
+      teamMembersLengthSame,
+      orgIdSame,
+      isSegmentApplicableSame,
+      prevTeamId: prevProps.team.id,
+      nextTeamId: nextProps.team.id,
+      prevEventTypeId: prevProps.eventType.id,
+      nextEventTypeId: nextProps.eventType.id,
+    });
+  }
+  
+  return allSame;
 });
 
 EventTeamAssignmentTab.displayName = "EventTeamAssignmentTab";
