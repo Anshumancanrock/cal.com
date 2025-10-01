@@ -60,11 +60,8 @@ const PhoneFactory = (props: WidgetProps | undefined) => {
   return <TextWidget type="tel" {...props} />;
 };
 
-const EmailFactory = (props: WidgetProps | undefined) => {
-  if (!props) {
-    return <div />;
-  }
-
+// Create a wrapper component to properly use useCallback hook
+const EmailWidgetWrapper = (props: WidgetProps) => {
   const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     props.setValue(val);
@@ -77,6 +74,13 @@ const EmailFactory = (props: WidgetProps | undefined) => {
       {...props}
     />
   );
+};
+
+const EmailFactory = (props: WidgetProps | undefined) => {
+  if (!props) {
+    return <div />;
+  }
+  return <EmailWidgetWrapper {...props} />;
 };
 
 // react-query-builder types have missing type property on Widget

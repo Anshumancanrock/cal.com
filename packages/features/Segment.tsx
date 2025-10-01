@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -31,7 +31,7 @@ export function useAttributes(teamId: number) {
 function SegmentWithAttributes({
   attributes,
   teamId,
-  queryValue: initialQueryValue,
+  queryValue: queryValueProp,
   onQueryValueChange,
   className,
 }: {
@@ -41,7 +41,15 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const [queryValue, setQueryValue] = useState(initialQueryValue);
+  // Internal state for immediate updates to prevent parent re-renders on every keystroke
+  const [queryValue, setQueryValue] = useState(queryValueProp);
+  
+  // Sync with prop when it changes externally (but not from our own updates)
+  useEffect(() => {
+    if (!isEqual(queryValueProp, queryValue)) {
+      setQueryValue(queryValueProp);
+    }
+  }, [queryValueProp]); // Only depend on prop, not queryValue to avoid loops
   
   // Memoize the config to prevent unnecessary re-creations
   const attributesQueryBuilderConfig = useMemo(() => getQueryBuilderConfigForAttributes({

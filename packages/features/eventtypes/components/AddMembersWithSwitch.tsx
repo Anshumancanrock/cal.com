@@ -1,4 +1,4 @@
-import { useMemo, type ComponentProps, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useCallback, memo, type ComponentProps, type Dispatch, type SetStateAction } from "react";
 import { useFormContext } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import type { Options } from "react-select";
@@ -123,7 +123,7 @@ const CheckedHostField = ({
   );
 };
 
-function MembersSegmentWithToggle({
+const MembersSegmentWithToggle = memo(function MembersSegmentWithToggle({
   teamId,
   assignRRMembersUsingSegment,
   setAssignRRMembersUsingSegment,
@@ -139,9 +139,9 @@ function MembersSegmentWithToggle({
   className?: string;
 }) {
   const { t } = useLocale();
-  const onQueryValueChange = ({ queryValue }: { queryValue: AttributesQueryValue }) => {
+  const onQueryValueChange = useCallback(({ queryValue }: { queryValue: AttributesQueryValue }) => {
     setRrSegmentQueryValue(queryValue);
-  };
+  }, [setRrSegmentQueryValue]);
   const isPlatform = useIsPlatform();
   return (
     <Controller<FormValues>
@@ -168,7 +168,7 @@ function MembersSegmentWithToggle({
       )}
     />
   );
-}
+});
 
 export type AddMembersWithSwitchCustomClassNames = {
   assingAllTeamMembers?: SettingsToggleClassNames;
@@ -226,13 +226,16 @@ function getAssignmentState({
 function useSegmentState() {
   const { getValues, setValue, watch } = useFormContext<FormValues>();
   const assignRRMembersUsingSegment = watch("assignRRMembersUsingSegment");
-
-  const setAssignRRMembersUsingSegment = (value: boolean) =>
-    setValue("assignRRMembersUsingSegment", value, { shouldDirty: true });
-
+  
+  // Use getValues for initial value only - Segment component manages its own state
+  // and syncs back to form on changes, avoiding parent re-renders on every keystroke
   const rrSegmentQueryValue = getValues("rrSegmentQueryValue");
-  const setRrSegmentQueryValue = (value: AttributesQueryValue) =>
-    setValue("rrSegmentQueryValue", value, { shouldDirty: true });
+
+  const setAssignRRMembersUsingSegment = useCallback((value: boolean) =>
+    setValue("assignRRMembersUsingSegment", value, { shouldDirty: true }), [setValue]);
+
+  const setRrSegmentQueryValue = useCallback((value: AttributesQueryValue) =>
+    setValue("rrSegmentQueryValue", value, { shouldDirty: true }), [setValue]);
 
   return {
     assignRRMembersUsingSegment,
