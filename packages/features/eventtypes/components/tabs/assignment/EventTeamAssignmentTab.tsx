@@ -761,7 +761,7 @@ const Hosts = memo(function Hosts({
   );
 });
 
-export const EventTeamAssignmentTab = ({
+export const EventTeamAssignmentTab = memo(({
   team,
   teamMembers,
   eventType,
@@ -938,4 +938,6 @@ export const EventTeamAssignmentTab = ({
       )}
     </div>
   );
-};
+});
+
+EventTeamAssignmentTab.displayName = "EventTeamAssignmentTab";
