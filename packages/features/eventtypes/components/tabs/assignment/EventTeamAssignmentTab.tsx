@@ -39,6 +39,7 @@ import { Tooltip } from "@calcom/ui/components/tooltip";
 import { EditWeightsForAllTeamMembers } from "../../EditWeightsForAllTeamMembers";
 import WeightDescription from "../../WeightDescription";
 import RoundRobinSection from "./RoundRobinSection";
+import SchedulingTypeSelector from "./SchedulingTypeSelector";
 
 export type EventTeamAssignmentTabCustomClassNames = {
   assignmentType?: {
@@ -771,22 +772,21 @@ export const EventTeamAssignmentTab = memo(({
 }: EventTeamAssignmentTabBaseProps) => {
   const { t } = useLocale();
 
-  const schedulingTypeOptions: {
-    value: SchedulingType;
-    label: string;
-    // description: string;
-  }[] = [
+  // CRITICAL: Memoize to prevent creating new array reference on every render
+  // Without useMemo, SchedulingTypeSelector would re-render even with memo() due to new prop reference
+  const schedulingTypeOptions = useMemo(() => [
     {
-      value: "COLLECTIVE",
+      value: "COLLECTIVE" as SchedulingType,
       label: t("collective"),
       // description: t("collective_description"),
     },
     {
-      value: "ROUND_ROBIN",
+      value: "ROUND_ROBIN" as SchedulingType,
       label: t("round_robin"),
       // description: t("round_robin_description"),
     },
-  ];
+  ], [t]);
+  
   const pendingMembers = useCallback(
     (member: (typeof teamMembers)[number]) => !!eventType.team?.parentId || !!member.username,
     [eventType.team?.parentId]
@@ -815,7 +815,12 @@ export const EventTeamAssignmentTab = memo(({
     [teamMembers, pendingMembers, eventType.slug, eventType.children, t]
   );
   const isManagedEventType = eventType.schedulingType === SchedulingType.MANAGED;
-  const { getValues, setValue, control } = useFormContext<FormValues>();
+  
+  // 🔍 DEEP INVESTIGATION: Check if useFormContext itself is causing subscriptions
+  const formContext = useFormContext<FormValues>();
+  const { getValues, setValue, control } = formContext;
+  
+  console.log("[EventTeamAssignmentTab] useFormContext called - control reference:", control);
   
   // CRITICAL: Read schedulingType directly without Controller to avoid subscription
   const currentSchedulingType = getValues("schedulingType");
@@ -889,20 +894,12 @@ export const EventTeamAssignmentTab = memo(({
               <Label className={customClassNames?.assignmentType?.schedulingTypeSelect?.label}>
                 {t("scheduling_type")}
               </Label>
-              <Controller<FormValues>
-                name="schedulingType"
-                render={({ field: { value: schedulingTypeValue, onChange } }) => (
-                  <Select
-                    options={schedulingTypeOptions}
-                    value={schedulingTypeOptions.find((opt) => opt.value === schedulingTypeValue)}
-                    className={classNames(
-                      "w-full",
-                      customClassNames?.assignmentType?.schedulingTypeSelect?.select
-                    )}
-                    innerClassNames={customClassNames?.assignmentType?.schedulingTypeSelect?.innerClassNames}
-                    onChange={(val) => handleSchedulingTypeChange(val?.value, onChange)}
-                  />
-                )}
+              {/* CRITICAL: SchedulingTypeSelector is isolated to prevent Controller subscription from causing parent re-renders */}
+              <SchedulingTypeSelector
+                t={t}
+                schedulingTypeOptions={schedulingTypeOptions}
+                handleSchedulingTypeChange={handleSchedulingTypeChange}
+                customClassNames={customClassNames}
               />
             </div>
           </div>
