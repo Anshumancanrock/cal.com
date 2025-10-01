@@ -38,6 +38,7 @@ import { Tooltip } from "@calcom/ui/components/tooltip";
 
 import { EditWeightsForAllTeamMembers } from "../../EditWeightsForAllTeamMembers";
 import WeightDescription from "../../WeightDescription";
+import RoundRobinSection from "./RoundRobinSection";
 
 export type EventTeamAssignmentTabCustomClassNames = {
   assignmentType?: {
@@ -854,13 +855,13 @@ export const EventTeamAssignmentTab = ({
     [setValue, setAssignAllTeamMembers]
   );
 
-  const handleMaxLeadThresholdChange = (val: string, onChange: (value: number | null) => void) => {
+  const handleMaxLeadThresholdChange = useCallback((val: string, onChange: (value: number | null) => void) => {
     if (val === "loadBalancing") {
       onChange(3);
     } else {
       onChange(null);
     }
-  };
+  }, []);
 
   return (
     <div>
@@ -914,85 +915,12 @@ export const EventTeamAssignmentTab = ({
             render={({ field: { value: schedulingType } }) => (
               <>
                 {schedulingType === "ROUND_ROBIN" && (
-            <div className="border-subtle mt-4 flex flex-col rounded-md">
-              <div className="border-subtle rounded-t-md border p-6 pb-5">
-                <Label className="mb-1 text-sm font-semibold">{t("rr_distribution_method")}</Label>
-                <p className="text-subtle max-w-full break-words text-sm leading-tight">
-                  {t("rr_distribution_method_description")}
-                </p>
-              </div>
-              <div className="border-subtle rounded-b-md border border-t-0 p-6">
-                <Controller
-                  name="maxLeadThreshold"
-                  render={({ field: { value, onChange } }) => (
-                    <RadioArea.Group
-                      onValueChange={(val) => handleMaxLeadThresholdChange(val, onChange)}
-                      className="mt-1 flex flex-col gap-4">
-                      <RadioArea.Item
-                        value="maximizeAvailability"
-                        checked={value === null}
-                        className="w-full text-sm"
-                        classNames={{ container: "w-full" }}>
-                        <strong className="mb-1 block">
-                          {t("rr_distribution_method_availability_title")}
-                        </strong>
-                        <p>{t("rr_distribution_method_availability_description")}</p>
-                      </RadioArea.Item>
-                      {(eventType.team?.rrTimestampBasis &&
-                        eventType.team?.rrTimestampBasis !== RRTimestampBasis.CREATED_AT) ||
-                      getValues("hostGroups")?.length > 1 ? (
-                        <Tooltip
-                          content={
-                            !!(
-                              eventType.team?.rrTimestampBasis &&
-                              eventType.team?.rrTimestampBasis !== RRTimestampBasis.CREATED_AT
-                            )
-                              ? t("rr_load_balancing_disabled")
-                              : t("rr_load_balancing_disabled_with_groups")
-                          }>
-                          <div className="w-full">
-                            <RadioArea.Item
-                              value="loadBalancing"
-                              checked={value !== null}
-                              className="text-sm"
-                              disabled={true}
-                              classNames={{ container: "w-full" }}>
-                              <strong className="mb-1">{t("rr_distribution_method_balanced_title")}</strong>
-                              <p>{t("rr_distribution_method_balanced_description")}</p>
-                            </RadioArea.Item>
-                          </div>
-                        </Tooltip>
-                      ) : (
-                        <div className="w-full">
-                          <RadioArea.Item
-                            value="loadBalancing"
-                            checked={value !== null}
-                            className="text-sm"
-                            classNames={{ container: "w-full" }}>
-                            <strong className="mb-1">{t("rr_distribution_method_balanced_title")}</strong>
-                            <p>{t("rr_distribution_method_balanced_description")}</p>
-                          </RadioArea.Item>
-                        </div>
-                      )}
-                    </RadioArea.Group>
-                  )}
-                />
-                <div className="mt-4">
-                  <Controller
-                    name="includeNoShowInRRCalculation"
-                    render={({ field: { value, onChange } }) => (
-                      <SettingsToggle
-                        title={t("include_no_show_in_rr_calculation")}
-                        labelClassName="mt-1.5"
-                        checked={value}
-                        onCheckedChange={(val) => onChange(val)}
-                      />
-                    )}
+                  <RoundRobinSection 
+                    t={t} 
+                    eventType={eventType}
+                    handleMaxLeadThresholdChange={handleMaxLeadThresholdChange}
                   />
-                </div>
-              </div>
-            </div>
-          )}
+                )}
                 <Hosts
                   orgId={orgId}
                   isSegmentApplicable={isSegmentApplicable}
