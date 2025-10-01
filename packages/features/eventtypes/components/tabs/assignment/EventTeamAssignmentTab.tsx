@@ -938,6 +938,19 @@ export const EventTeamAssignmentTab = memo(({
       )}
     </div>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison: only compare IDs and lengths, not full objects
+  // This prevents re-renders when parent passes new object references with same data
+  return (
+    prevProps.team.id === nextProps.team.id &&
+    prevProps.eventType.id === nextProps.eventType.id &&
+    prevProps.eventType.schedulingType === nextProps.eventType.schedulingType &&
+    prevProps.teamMembers.length === nextProps.teamMembers.length &&
+    prevProps.orgId === nextProps.orgId &&
+    prevProps.isSegmentApplicable === nextProps.isSegmentApplicable
+    // Intentionally not comparing teamMembers array deeply or customClassNames
+    // These cause unnecessary re-renders even when data is the same
+  );
 });
 
 EventTeamAssignmentTab.displayName = "EventTeamAssignmentTab";
