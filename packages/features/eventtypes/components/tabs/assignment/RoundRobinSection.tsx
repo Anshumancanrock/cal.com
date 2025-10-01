@@ -24,6 +24,8 @@ interface RoundRobinSectionProps {
  */
 const RoundRobinSection = memo(({ t, eventType, handleMaxLeadThresholdChange }: RoundRobinSectionProps) => {
   const { getValues } = useFormContext<FormValues>();
+  
+  console.log("[RoundRobinSection] RENDER - This should NOT log when typing in attributes filter");
 
   return (
     <div className="border-subtle mt-4 flex flex-col rounded-md">

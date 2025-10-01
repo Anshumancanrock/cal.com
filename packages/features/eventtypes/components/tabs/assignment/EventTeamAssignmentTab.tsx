@@ -863,6 +863,8 @@ export const EventTeamAssignmentTab = ({
     }
   }, []);
 
+  console.log("[EventTeamAssignmentTab] RENDER - Parent component is re-rendering");
+
   return (
     <div>
       {team && !isManagedEventType && (

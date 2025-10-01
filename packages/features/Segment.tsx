@@ -41,6 +41,8 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
+  console.log("[SegmentWithAttributes] RENDER - Segment component is re-rendering");
+  
   // Internal state for immediate updates to prevent parent re-renders on every keystroke
   const [queryValue, setQueryValue] = useState(queryValueProp);
   
