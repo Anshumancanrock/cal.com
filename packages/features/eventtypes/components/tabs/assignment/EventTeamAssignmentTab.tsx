@@ -908,8 +908,9 @@ export const EventTeamAssignmentTab = memo(({
             {currentSchedulingType === "ROUND_ROBIN" && (
               <RoundRobinSection 
                 t={t} 
-                eventType={eventType}
+                rrTimestampBasis={eventType.team?.rrTimestampBasis}
                 handleMaxLeadThresholdChange={handleMaxLeadThresholdChange}
+                getValues={getValues}
               />
             )}
             <Hosts

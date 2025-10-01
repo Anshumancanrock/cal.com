@@ -6,24 +6,28 @@ import { RadioAreaGroup as RadioArea } from "@calcom/ui/components/radio";
 import { SettingsToggle } from "@calcom/ui/components/form";
 import { Tooltip } from "@calcom/ui/components/tooltip";
 import { RRTimestampBasis } from "@calcom/prisma/enums";
+import type { UseFormGetValues } from "react-hook-form";
 
 interface RoundRobinSectionProps {
   t: (key: string) => string;
-  eventType: any;
+  rrTimestampBasis: RRTimestampBasis | null | undefined;
   handleMaxLeadThresholdChange: (val: string, onChange: (value: number | null) => void) => void;
+  getValues: UseFormGetValues<FormValues>;
 }
 
 /**
  * CRITICAL ISOLATION: This component is completely isolated from parent re-renders.
+ * CRITICAL: Does NOT call useFormContext() to avoid React Context subscription!
+ * Receives getValues as prop instead to prevent form change subscriptions.
  * It only re-renders when:
- * 1. Its props change (eventType, handlers - which are memoized)
- * 2. The form fields it directly controls change (maxLeadThreshold, includeNoShowInRRCalculation)
+ * 1. Its props change (rrTimestampBasis, handlers - which are memoized)
+ * 2. The form fields it directly controls change (via Controller subscriptions)
  * 
  * It does NOT re-render when hostGroups or any nested fields change,
  * which is exactly what we need to prevent focus loss in the attributes filter.
  */
-const RoundRobinSection = memo(({ t, eventType, handleMaxLeadThresholdChange }: RoundRobinSectionProps) => {
-  const { getValues } = useFormContext<FormValues>();
+const RoundRobinSection = memo(({ t, rrTimestampBasis, handleMaxLeadThresholdChange, getValues }: RoundRobinSectionProps) => {
+  const { control } = useFormContext<FormValues>();
   
   console.log("[RoundRobinSection] RENDER - This should NOT log when typing in attributes filter");
 
@@ -52,14 +56,14 @@ const RoundRobinSection = memo(({ t, eventType, handleMaxLeadThresholdChange }: 
                 </strong>
                 <p>{t("rr_distribution_method_availability_description")}</p>
               </RadioArea.Item>
-              {(eventType.team?.rrTimestampBasis &&
-                eventType.team?.rrTimestampBasis !== RRTimestampBasis.CREATED_AT) ||
+              {(rrTimestampBasis &&
+                rrTimestampBasis !== RRTimestampBasis.CREATED_AT) ||
               getValues("hostGroups")?.length > 1 ? (
                 <Tooltip
                   content={
                     !!(
-                      eventType.team?.rrTimestampBasis &&
-                      eventType.team?.rrTimestampBasis !== RRTimestampBasis.CREATED_AT
+                      rrTimestampBasis &&
+                      rrTimestampBasis !== RRTimestampBasis.CREATED_AT
                     )
                       ? t("rr_load_balancing_disabled")
                       : t("rr_load_balancing_disabled_with_groups")
@@ -107,6 +111,20 @@ const RoundRobinSection = memo(({ t, eventType, handleMaxLeadThresholdChange }: 
       </div>
     </div>
   );
+},
+// Custom comparison: only re-render if rrTimestampBasis value actually changes
+// This prevents re-renders when parent passes new eventType object with same value
+(prevProps, nextProps) => {
+  const same = prevProps.rrTimestampBasis === nextProps.rrTimestampBasis;
+  
+  if (!same) {
+    console.log("[RoundRobinSection memo] rrTimestampBasis changed:", {
+      prev: prevProps.rrTimestampBasis,
+      next: nextProps.rrTimestampBasis
+    });
+  }
+  
+  return same;
 });
 
 RoundRobinSection.displayName = "RoundRobinSection";
