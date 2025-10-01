@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import { Controller, useFormContext, useWatch } from "react-hook-form";
 import type { Options } from "react-select";
@@ -307,10 +307,9 @@ const RoundRobinHosts = ({
     control,
     name: "isRRWeightsEnabled",
   });
-  const rrSegmentQueryValue = useWatch({
-    control,
-    name: "rrSegmentQueryValue",
-  });
+  // Use getValues instead of useWatch to prevent parent re-renders on every keystroke
+  // EditWeightsForAllTeamMembers will manage its own state
+  const rrSegmentQueryValue = getValues("rrSegmentQueryValue");
   const hostGroups = useWatch({
     control,
     name: "hostGroups",
@@ -413,13 +412,13 @@ const RoundRobinHosts = ({
     [getValues, setValue, teamMembers]
   );
 
-  const AddMembersWithSwitchComponent = ({
+  const AddMembersWithSwitchComponent = memo(function AddMembersWithSwitchComponent({
     groupId,
     containerClassName,
   }: {
     groupId: string | null;
     containerClassName?: string;
-  }) => {
+  }) {
     return (
       <AddMembersWithSwitch
         placeholder={t("add_a_member")}
@@ -439,7 +438,7 @@ const RoundRobinHosts = ({
         customClassNames={customClassNames?.addMembers}
       />
     );
-  };
+  });
 
   const UnassignedHostsGroup = () => {
     const unassignedHosts = value.filter((host) => !host.isFixed && !host.groupId);
