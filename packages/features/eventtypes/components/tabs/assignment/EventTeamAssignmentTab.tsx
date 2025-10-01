@@ -6,6 +6,8 @@ import { Controller, useFormContext, useWatch } from "react-hook-form";
 import type { Options } from "react-select";
 import { v4 as uuidv4 } from "uuid";
 
+import { isEqual } from "@calcom/lib/isEqual";
+
 import type { AddMembersWithSwitchCustomClassNames } from "@calcom/features/eventtypes/components/AddMembersWithSwitch";
 import AddMembersWithSwitch, {
   mapUserToValue,
@@ -278,7 +280,9 @@ type RoundRobinHostsCustomClassNames = {
   addMembers?: AddMembersWithSwitchCustomClassNames;
 };
 
-const RoundRobinHosts = ({
+// CRITICAL: Memo prevents re-renders when parent re-renders but props haven't changed
+// This is essential to prevent focus loss when parent EventTeamAssignmentTab uses useWatch
+const RoundRobinHosts = memo(function RoundRobinHosts({
   orgId,
   teamMembers,
   value,
@@ -298,22 +302,29 @@ const RoundRobinHosts = ({
   customClassNames?: RoundRobinHostsCustomClassNames;
   teamId: number;
   isSegmentApplicable: boolean;
-}) => {
+}) {
   const { t } = useLocale();
 
   const { setValue, getValues, control, formState } = useFormContext<FormValues>();
   const assignRRMembersUsingSegment = getValues("assignRRMembersUsingSegment");
-  const isRRWeightsEnabled = useWatch({
-    control,
-    name: "isRRWeightsEnabled",
-  });
-  // Use getValues instead of useWatch to prevent parent re-renders on every keystroke
-  // EditWeightsForAllTeamMembers will manage its own state
+  
+  // CRITICAL: Use local state instead of useWatch to prevent re-renders on unrelated form changes
+  // useWatch subscribes to ALL form state changes, causing re-renders when typing in ANY input
+  // We manage hostGroups locally since it's only modified by user actions in this component
+  const [hostGroups, setHostGroups] = useState<{ id: string; name: string }[]>(
+    getValues("hostGroups") || []
+  );
+  
+  // Sync local state with form when needed (external updates)
+  useEffect(() => {
+    const formHostGroups = getValues("hostGroups") || [];
+    if (!isEqual(formHostGroups, hostGroups)) {
+      setHostGroups(formHostGroups);
+    }
+  }, [formState.dirtyFields.hostGroups]); // Only sync when hostGroups field is actually dirtied
+  
+  // rrSegmentQueryValue only needed for EditWeights dialog (infrequent operation)
   const rrSegmentQueryValue = getValues("rrSegmentQueryValue");
-  const hostGroups = useWatch({
-    control,
-    name: "hostGroups",
-  });
 
   const handleWeightsEnabledChange = (active: boolean, onChange: (value: boolean) => void) => {
     onChange(active);
@@ -344,6 +355,7 @@ const RoundRobinHosts = ({
       const secondGroup = { id: uuidv4(), name: "" };
       const updatedHostGroups = [firstGroup, secondGroup];
       setValue("hostGroups", updatedHostGroups, { shouldDirty: true });
+      setHostGroups(updatedHostGroups); // Update local state for immediate UI update
 
       const updatedRRHosts = currentRRHosts.map((host) => {
         if (!host.groupId && !host.isFixed) {
@@ -357,6 +369,7 @@ const RoundRobinHosts = ({
       const newGroup = { id: uuidv4(), name: "" };
       const updatedHostGroups = [...hostGroups, newGroup];
       setValue("hostGroups", updatedHostGroups, { shouldDirty: true });
+      setHostGroups(updatedHostGroups); // Update local state for immediate UI update
     }
 
     // Disable 'Add all team members' switch if enabled
@@ -371,6 +384,7 @@ const RoundRobinHosts = ({
       const updatedHostGroups =
         hostGroups?.map((g) => (g.id === groupId ? { ...g, name: newName } : g)) || [];
       setValue("hostGroups", updatedHostGroups, { shouldDirty: true });
+      setHostGroups(updatedHostGroups); // Update local state for immediate UI update
     },
     [hostGroups, setValue]
   );
@@ -380,6 +394,7 @@ const RoundRobinHosts = ({
       // Remove the group from hostGroups
       const updatedHostGroups = hostGroups?.filter((g) => g.id !== groupId) || [];
       setValue("hostGroups", updatedHostGroups, { shouldDirty: true });
+      setHostGroups(updatedHostGroups); // Update local state for immediate UI update
 
       // Remove all hosts that belong to this group
       const updatedHosts = value.filter((host) => host.groupId !== groupId);
@@ -419,6 +434,9 @@ const RoundRobinHosts = ({
     groupId: string | null;
     containerClassName?: string;
   }) {
+    // Read isRRWeightsEnabled once from form - no subscription needed
+    const currentIsRRWeightsEnabled = getValues("isRRWeightsEnabled");
+    
     return (
       <AddMembersWithSwitch
         placeholder={t("add_a_member")}
@@ -430,7 +448,7 @@ const RoundRobinHosts = ({
         setAssignAllTeamMembers={setAssignAllTeamMembers}
         isSegmentApplicable={isSegmentApplicable}
         automaticAddAllEnabled={true}
-        isRRWeightsEnabled={isRRWeightsEnabled}
+        isRRWeightsEnabled={currentIsRRWeightsEnabled}
         isFixed={false}
         groupId={groupId}
         containerClassName={containerClassName || (assignAllTeamMembers ? "-mt-4" : "")}
@@ -549,7 +567,7 @@ const RoundRobinHosts = ({
       </div>
     </div>
   );
-};
+});
 
 type ChildrenEventTypesCustomClassNames = {
   container?: string;
