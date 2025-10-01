@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useMemo, memo } from "react";
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
-import { Controller, useFormContext, useWatch } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
 import type { Options } from "react-select";
 import { v4 as uuidv4 } from "uuid";
 
@@ -829,10 +829,39 @@ export const EventTeamAssignmentTab = ({
     [teamMembers, pendingMembers, eventType.slug, eventType.children, t]
   );
   const isManagedEventType = eventType.schedulingType === SchedulingType.MANAGED;
-  const { getValues, setValue, control } = useFormContext<FormValues>();
+  const { getValues, setValue, control, formState } = useFormContext<FormValues>();
   const [assignAllTeamMembers, setAssignAllTeamMembers] = useState<boolean>(
     getValues("assignAllTeamMembers") ?? false
   );
+
+  // CRITICAL FIX: Use local state instead of useWatch to prevent re-renders on ALL form changes
+  // useWatch subscribes to ALL form state changes, causing EventTeamAssignmentTab to re-render
+  // on every keystroke in the segment input, which breaks focus
+  const [schedulingType, setSchedulingType] = useState<SchedulingType | null>(
+    getValues("schedulingType") ?? null
+  );
+  const [hostGroups, setHostGroups] = useState<{ id: string; name: string }[]>(
+    getValues("hostGroups") || []
+  );
+
+  // Sync local state only when these specific fields are actually modified
+  useEffect(() => {
+    if (formState.dirtyFields.schedulingType) {
+      const formSchedulingType = getValues("schedulingType");
+      if (formSchedulingType !== schedulingType) {
+        setSchedulingType(formSchedulingType);
+      }
+    }
+  }, [formState.dirtyFields.schedulingType, getValues, schedulingType]);
+
+  useEffect(() => {
+    if (formState.dirtyFields.hostGroups) {
+      const formHostGroups = getValues("hostGroups") || [];
+      if (!isEqual(formHostGroups, hostGroups)) {
+        setHostGroups(formHostGroups);
+      }
+    }
+  }, [formState.dirtyFields.hostGroups, getValues, hostGroups]);
 
   const resetRROptions = () => {
     setValue("assignRRMembersUsingSegment", false, { shouldDirty: true });
@@ -841,9 +870,10 @@ export const EventTeamAssignmentTab = ({
   };
 
   const handleSchedulingTypeChange = useCallback(
-    (schedulingType: SchedulingType | undefined, onChange: (value: SchedulingType | undefined) => void) => {
-      if (schedulingType) {
-        onChange(schedulingType);
+    (newSchedulingType: SchedulingType | undefined, onChange: (value: SchedulingType | undefined) => void) => {
+      if (newSchedulingType) {
+        onChange(newSchedulingType);
+        setSchedulingType(newSchedulingType); // Update local state immediately for UI responsiveness
         resetRROptions();
       }
     },
@@ -857,16 +887,6 @@ export const EventTeamAssignmentTab = ({
       onChange(null);
     }
   };
-
-  const schedulingType = useWatch({
-    control,
-    name: "schedulingType",
-  });
-
-  const hostGroups = useWatch({
-    control,
-    name: "hostGroups",
-  });
 
   return (
     <div>
