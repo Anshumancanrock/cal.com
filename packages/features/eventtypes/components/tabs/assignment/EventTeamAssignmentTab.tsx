@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo, memo } from "react";
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import { Controller, useFormContext, useWatch } from "react-hook-form";
 import type { Options } from "react-select";
@@ -326,23 +326,30 @@ const RoundRobinHosts = memo(function RoundRobinHosts({
   // rrSegmentQueryValue only needed for EditWeights dialog (infrequent operation)
   const rrSegmentQueryValue = getValues("rrSegmentQueryValue");
 
-  const handleWeightsEnabledChange = (active: boolean, onChange: (value: boolean) => void) => {
-    onChange(active);
-    const allHosts = getValues("hosts");
-    const fixedHosts = allHosts.filter((host) => host.isFixed);
-    const rrHosts = allHosts.filter((host) => !host.isFixed);
-    const sortedRRHosts = rrHosts.sort((a, b) => sortHosts(a, b, active));
-    // Preserve fixed hosts when updating
-    setValue("hosts", [...fixedHosts, ...sortedRRHosts]);
-  };
+  // Memoize callbacks to prevent breaking React.memo on child components
+  const handleWeightsEnabledChange = useCallback(
+    (active: boolean, onChange: (value: boolean) => void) => {
+      onChange(active);
+      const allHosts = getValues("hosts");
+      const fixedHosts = allHosts.filter((host) => host.isFixed);
+      const rrHosts = allHosts.filter((host) => !host.isFixed);
+      const sortedRRHosts = rrHosts.sort((a, b) => sortHosts(a, b, active));
+      // Preserve fixed hosts when updating
+      setValue("hosts", [...fixedHosts, ...sortedRRHosts]);
+    },
+    [getValues, setValue]
+  );
 
-  const handleWeightsChange = (hosts: Host[]) => {
-    const allHosts = getValues("hosts");
-    const fixedHosts = allHosts.filter((host) => host.isFixed);
-    const sortedRRHosts = hosts.sort((a, b) => sortHosts(a, b, true));
-    // Preserve fixed hosts when updating
-    setValue("hosts", [...fixedHosts, ...sortedRRHosts], { shouldDirty: true });
-  };
+  const handleWeightsChange = useCallback(
+    (hosts: Host[]) => {
+      const allHosts = getValues("hosts");
+      const fixedHosts = allHosts.filter((host) => host.isFixed);
+      const sortedRRHosts = hosts.sort((a, b) => sortHosts(a, b, true));
+      // Preserve fixed hosts when updating
+      setValue("hosts", [...fixedHosts, ...sortedRRHosts], { shouldDirty: true });
+    },
+    [getValues, setValue]
+  );
 
   const handleAddGroup = useCallback(() => {
     const allHosts = getValues("hosts");
@@ -624,7 +631,10 @@ type HostsCustomClassNames = {
   fixedHosts?: FixedHostsCustomClassNames;
   roundRobinHosts?: RoundRobinHostsCustomClassNames;
 };
-const Hosts = ({
+// CRITICAL: Memoize Hosts to prevent re-renders when parent re-renders but props haven't changed
+// Accept schedulingType as prop instead of using useWatch internally
+// useWatch causes re-renders on EVERY form state change, not just when the watched field changes
+const Hosts = memo(function Hosts({
   orgId,
   teamId,
   teamMembers,
@@ -632,6 +642,7 @@ const Hosts = ({
   setAssignAllTeamMembers,
   customClassNames,
   isSegmentApplicable,
+  schedulingType,
 }: {
   orgId: number | null;
   teamId: number;
@@ -640,17 +651,14 @@ const Hosts = ({
   setAssignAllTeamMembers: Dispatch<SetStateAction<boolean>>;
   customClassNames?: HostsCustomClassNames;
   isSegmentApplicable: boolean;
-}) => {
+  schedulingType: SchedulingType | null;
+}) {
   const {
     control,
     setValue,
     getValues,
     formState: { submitCount },
   } = useFormContext<FormValues>();
-  const schedulingType = useWatch({
-    control,
-    name: "schedulingType",
-  });
   const initialValue = useRef<{
     hosts: FormValues["hosts"];
     schedulingType: SchedulingType | null;
@@ -672,7 +680,9 @@ const Hosts = ({
 
   // To ensure existing host do not loose its scheduleId and groupId properties, whenever a new host of same type is added.
   // This is because the host is created from list option in CheckedHostField component.
-  const updatedHosts = (changedHosts: Host[]) => {
+  // CRITICAL: Memoize updatedHosts to maintain stable reference across re-renders
+  // This prevents Controller render function from creating new onChange callbacks
+  const updatedHosts = useCallback((changedHosts: Host[]) => {
     const existingHosts = getValues("hosts");
     return changedHosts.map((newValue) => {
       const existingHost = existingHosts.find((host: Host) => host.userId === newValue.userId);
@@ -685,21 +695,48 @@ const Hosts = ({
           }
         : newValue;
     });
-  };
+  }, [getValues]);
+
+  // CRITICAL: Store onChange and value in refs to create stable handlers
+  // This allows memoized onChange callbacks that don't break React.memo on child components
+  const onChangeRef = useRef<((hosts: Host[]) => void) | null>(null);
+  const valueRef = useRef<Host[]>([]);
+
+  // Memoized handlers for each scheduling type - these maintain stable references
+  const handleCollectiveChange = useCallback((changeValue: Host[]) => {
+    if (onChangeRef.current) {
+      onChangeRef.current([...updatedHosts(changeValue)]);
+    }
+  }, [updatedHosts]);
+
+  const handleRRFixedChange = useCallback((changeValue: Host[]) => {
+    if (onChangeRef.current) {
+      onChangeRef.current([...valueRef.current.filter((host: Host) => !host.isFixed), ...updatedHosts(changeValue)]);
+    }
+  }, [updatedHosts]);
+
+  const handleRRChange = useCallback((changeValue: Host[]) => {
+    if (onChangeRef.current) {
+      const hosts = [...valueRef.current.filter((host: Host) => host.isFixed), ...updatedHosts(changeValue)];
+      onChangeRef.current(hosts);
+    }
+  }, [updatedHosts]);
 
   return (
     <Controller<FormValues>
       name="hosts"
       render={({ field: { onChange, value } }) => {
+        // Update refs with current values from Controller
+        onChangeRef.current = onChange;
+        valueRef.current = value;
+
         const schedulingTypeRender = {
           COLLECTIVE: (
             <FixedHosts
               teamId={teamId}
               teamMembers={teamMembers}
               value={value}
-              onChange={(changeValue) => {
-                onChange([...updatedHosts(changeValue)]);
-              }}
+              onChange={handleCollectiveChange}
               assignAllTeamMembers={assignAllTeamMembers}
               setAssignAllTeamMembers={setAssignAllTeamMembers}
               customClassNames={customClassNames?.fixedHosts}
@@ -711,9 +748,7 @@ const Hosts = ({
                 teamId={teamId}
                 teamMembers={teamMembers}
                 value={value}
-                onChange={(changeValue) => {
-                  onChange([...value.filter((host: Host) => !host.isFixed), ...updatedHosts(changeValue)]);
-                }}
+                onChange={handleRRFixedChange}
                 assignAllTeamMembers={assignAllTeamMembers}
                 setAssignAllTeamMembers={setAssignAllTeamMembers}
                 isRoundRobinEvent={true}
@@ -724,10 +759,7 @@ const Hosts = ({
                 teamId={teamId}
                 teamMembers={teamMembers}
                 value={value}
-                onChange={(changeValue) => {
-                  const hosts = [...value.filter((host: Host) => host.isFixed), ...updatedHosts(changeValue)];
-                  onChange(hosts);
-                }}
+                onChange={handleRRChange}
                 assignAllTeamMembers={assignAllTeamMembers}
                 setAssignAllTeamMembers={setAssignAllTeamMembers}
                 customClassNames={customClassNames?.roundRobinHosts}
@@ -741,7 +773,7 @@ const Hosts = ({
       }}
     />
   );
-};
+});
 
 export const EventTeamAssignmentTab = ({
   team,
@@ -769,23 +801,33 @@ export const EventTeamAssignmentTab = ({
       // description: t("round_robin_description"),
     },
   ];
-  const pendingMembers = (member: (typeof teamMembers)[number]) =>
-    !!eventType.team?.parentId || !!member.username;
-  const teamMembersOptions = teamMembers
-    .filter(pendingMembers)
-    .map((member) => mapUserToValue(member, t("pending")));
-  const childrenEventTypeOptions = teamMembers.filter(pendingMembers).map((member) => {
-    return mapMemberToChildrenOption(
-      {
-        ...member,
-        eventTypes: member.eventTypes.filter(
-          (et) => et !== eventType.slug || !eventType.children.some((c) => c.owner.id === member.id)
-        ),
-      },
-      eventType.slug,
-      t("pending")
-    );
-  });
+  const pendingMembers = useCallback(
+    (member: (typeof teamMembers)[number]) => !!eventType.team?.parentId || !!member.username,
+    [eventType.team?.parentId]
+  );
+  
+  // Memoize to prevent recreating arrays on every render
+  const teamMembersOptions = useMemo(
+    () => teamMembers.filter(pendingMembers).map((member) => mapUserToValue(member, t("pending"))),
+    [teamMembers, pendingMembers, t]
+  );
+  
+  const childrenEventTypeOptions = useMemo(
+    () =>
+      teamMembers.filter(pendingMembers).map((member) => {
+        return mapMemberToChildrenOption(
+          {
+            ...member,
+            eventTypes: member.eventTypes.filter(
+              (et) => et !== eventType.slug || !eventType.children.some((c) => c.owner.id === member.id)
+            ),
+          },
+          eventType.slug,
+          t("pending")
+        );
+      }),
+    [teamMembers, pendingMembers, eventType.slug, eventType.children, t]
+  );
   const isManagedEventType = eventType.schedulingType === SchedulingType.MANAGED;
   const { getValues, setValue, control } = useFormContext<FormValues>();
   const [assignAllTeamMembers, setAssignAllTeamMembers] = useState<boolean>(
@@ -961,6 +1003,7 @@ export const EventTeamAssignmentTab = ({
             setAssignAllTeamMembers={setAssignAllTeamMembers}
             teamMembers={teamMembersOptions}
             customClassNames={customClassNames?.hosts}
+            schedulingType={schedulingType}
           />
         </>
       )}
