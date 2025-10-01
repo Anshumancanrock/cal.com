@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import type { ChangeEvent } from "react";
+import { useCallback } from "react";
 import type {
   ButtonGroupProps,
   ButtonProps,
@@ -81,10 +82,10 @@ export type TextLikeComponentPropsRAQB<TVal extends string | boolean = string> =
 const TextAreaWidget = (props: TextLikeComponentPropsRAQB) => {
   const { value, setValue, readOnly, placeholder, maxLength, customProps, ...remainingProps } = props;
 
-  const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+  const onChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setValue(val);
-  };
+  }, [setValue]);
 
   const textValue = value || "";
   return (
@@ -112,10 +113,12 @@ const TextWidget = (props: TextLikeComponentPropsRAQB) => {
     type = "text",
     ...remainingProps
   } = props;
-  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+  
+  const onChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setValue(val);
-  };
+  }, [setValue]);
+  
   const textValue = value || "";
   return (
     <TextField
@@ -134,6 +137,10 @@ const TextWidget = (props: TextLikeComponentPropsRAQB) => {
 };
 
 function NumberWidget({ value, setValue, ...remainingProps }: TextLikeComponentPropsRAQB) {
+  const onChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setValue(e.target.value);
+  }, [setValue]);
+
   return (
     <TextField
       size="sm"
@@ -142,9 +149,7 @@ function NumberWidget({ value, setValue, ...remainingProps }: TextLikeComponentP
       containerClassName="w-full"
       className="mb-2"
       value={value}
-      onChange={(e) => {
-        setValue(e.target.value);
-      }}
+      onChange={onChange}
       {...remainingProps}
     />
   );

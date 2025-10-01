@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { useCallback } from "react";
 import type {
   Settings,
   SelectWidgetProps,
@@ -64,12 +65,14 @@ const EmailFactory = (props: WidgetProps | undefined) => {
     return <div />;
   }
 
+  const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    props.setValue(val);
+  }, [props.setValue]);
+
   return (
     <EmailWidget
-      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        props.setValue(val);
-      }}
+      onChange={handleChange}
       containerClassName="w-full mb-2"
       {...props}
     />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -41,33 +41,36 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  const attributesQueryBuilderConfig = getQueryBuilderConfigForAttributes({
-    attributes,
-  });
-
   const [queryValue, setQueryValue] = useState(initialQueryValue);
-  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = withRaqbSettingsAndWidgets({
+  
+  // Memoize the config to prevent unnecessary re-creations
+  const attributesQueryBuilderConfig = useMemo(() => getQueryBuilderConfigForAttributes({
+    attributes,
+  }), [attributes]);
+
+  const attributesQueryBuilderConfigWithRaqbSettingsAndWidgets = useMemo(() => withRaqbSettingsAndWidgets({
     config: attributesQueryBuilderConfig,
     configFor: ConfigFor.Attributes,
-  });
+  }), [attributesQueryBuilderConfig]);
 
-  const queryBuilderData = buildStateFromQueryValue({
+  // Memoize the query builder data to prevent re-calculation on every render
+  const queryBuilderData = useMemo(() => buildStateFromQueryValue({
     queryValue: queryValue as JsonTree,
     config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-  });
+  }), [queryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
-      <div className="query-builder-container" data-testid="query-builder-container">
-        <div className="query-builder qb-lite">
-          <Builder {...props} />
+      <div className="query-builder-container" data-testid="query-builder-container" key="query-builder-container">
+        <div className="query-builder qb-lite" key="query-builder-qb-lite">
+          <Builder {...props} key="raqb-builder" />
         </div>
       </div>
     ),
     []
   );
 
-  function onChange(immutableTree: ImmutableTree) {
+  const onChange = useCallback((immutableTree: ImmutableTree) => {
     const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
 
     // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. isEqual ensures that we don't end up having infinite re-renders.
@@ -77,7 +80,7 @@ function SegmentWithAttributes({
         queryValue: jsonTree,
       });
     }
-  }
+  }, [queryValue, onQueryValueChange]);
 
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
@@ -88,6 +91,7 @@ function SegmentWithAttributes({
           value={queryBuilderData.state.tree}
           onChange={onChange}
           renderBuilder={renderBuilder}
+          key="attributes-query-builder"
         />
       </div>
       <div className="mt-4 text-sm">
