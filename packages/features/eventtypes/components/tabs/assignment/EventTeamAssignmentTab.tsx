@@ -829,39 +829,14 @@ export const EventTeamAssignmentTab = ({
     [teamMembers, pendingMembers, eventType.slug, eventType.children, t]
   );
   const isManagedEventType = eventType.schedulingType === SchedulingType.MANAGED;
-  const { getValues, setValue, control, formState } = useFormContext<FormValues>();
+  const { getValues, setValue, control } = useFormContext<FormValues>();
   const [assignAllTeamMembers, setAssignAllTeamMembers] = useState<boolean>(
     getValues("assignAllTeamMembers") ?? false
   );
 
-  // CRITICAL FIX: Use local state instead of useWatch to prevent re-renders on ALL form changes
-  // useWatch subscribes to ALL form state changes, causing EventTeamAssignmentTab to re-render
-  // on every keystroke in the segment input, which breaks focus
-  const [schedulingType, setSchedulingType] = useState<SchedulingType | null>(
-    getValues("schedulingType") ?? null
-  );
-  const [hostGroups, setHostGroups] = useState<{ id: string; name: string }[]>(
-    getValues("hostGroups") || []
-  );
-
-  // Sync local state only when these specific fields are actually modified
-  useEffect(() => {
-    if (formState.dirtyFields.schedulingType) {
-      const formSchedulingType = getValues("schedulingType");
-      if (formSchedulingType !== schedulingType) {
-        setSchedulingType(formSchedulingType);
-      }
-    }
-  }, [formState.dirtyFields.schedulingType, getValues, schedulingType]);
-
-  useEffect(() => {
-    if (formState.dirtyFields.hostGroups) {
-      const formHostGroups = getValues("hostGroups") || [];
-      if (!isEqual(formHostGroups, hostGroups)) {
-        setHostGroups(formHostGroups);
-      }
-    }
-  }, [formState.dirtyFields.hostGroups, getValues, hostGroups]);
+  // CRITICAL FIX: Use Controller to read schedulingType and hostGroups values
+  // This ensures we only read the values when needed for rendering, without subscribing to form state
+  // Previously useWatch was subscribing to ALL form changes, causing re-renders on every keystroke
 
   const resetRROptions = () => {
     setValue("assignRRMembersUsingSegment", false, { shouldDirty: true });
@@ -873,7 +848,6 @@ export const EventTeamAssignmentTab = ({
     (newSchedulingType: SchedulingType | undefined, onChange: (value: SchedulingType | undefined) => void) => {
       if (newSchedulingType) {
         onChange(newSchedulingType);
-        setSchedulingType(newSchedulingType); // Update local state immediately for UI responsiveness
         resetRROptions();
       }
     },
@@ -920,10 +894,10 @@ export const EventTeamAssignmentTab = ({
               </Label>
               <Controller<FormValues>
                 name="schedulingType"
-                render={({ field: { value, onChange } }) => (
+                render={({ field: { value: schedulingTypeValue, onChange } }) => (
                   <Select
                     options={schedulingTypeOptions}
-                    value={schedulingTypeOptions.find((opt) => opt.value === value)}
+                    value={schedulingTypeOptions.find((opt) => opt.value === schedulingTypeValue)}
                     className={classNames(
                       "w-full",
                       customClassNames?.assignmentType?.schedulingTypeSelect?.select
@@ -935,7 +909,11 @@ export const EventTeamAssignmentTab = ({
               />
             </div>
           </div>
-          {schedulingType === "ROUND_ROBIN" && (
+          <Controller<FormValues>
+            name="schedulingType"
+            render={({ field: { value: schedulingType } }) => (
+              <>
+                {schedulingType === "ROUND_ROBIN" && (
             <div className="border-subtle mt-4 flex flex-col rounded-md">
               <div className="border-subtle rounded-t-md border p-6 pb-5">
                 <Label className="mb-1 text-sm font-semibold">{t("rr_distribution_method")}</Label>
@@ -962,7 +940,7 @@ export const EventTeamAssignmentTab = ({
                       </RadioArea.Item>
                       {(eventType.team?.rrTimestampBasis &&
                         eventType.team?.rrTimestampBasis !== RRTimestampBasis.CREATED_AT) ||
-                      hostGroups?.length > 1 ? (
+                      getValues("hostGroups")?.length > 1 ? (
                         <Tooltip
                           content={
                             !!(
@@ -1015,15 +993,18 @@ export const EventTeamAssignmentTab = ({
               </div>
             </div>
           )}
-          <Hosts
-            orgId={orgId}
-            isSegmentApplicable={isSegmentApplicable}
-            teamId={team.id}
-            assignAllTeamMembers={assignAllTeamMembers}
-            setAssignAllTeamMembers={setAssignAllTeamMembers}
-            teamMembers={teamMembersOptions}
-            customClassNames={customClassNames?.hosts}
-            schedulingType={schedulingType}
+                <Hosts
+                  orgId={orgId}
+                  isSegmentApplicable={isSegmentApplicable}
+                  teamId={team.id}
+                  assignAllTeamMembers={assignAllTeamMembers}
+                  setAssignAllTeamMembers={setAssignAllTeamMembers}
+                  teamMembers={teamMembersOptions}
+                  customClassNames={customClassNames?.hosts}
+                  schedulingType={schedulingType}
+                />
+              </>
+            )}
           />
         </>
       )}
