@@ -306,23 +306,12 @@ const RoundRobinHosts = memo(function RoundRobinHosts({
 }) {
   const { t } = useLocale();
 
-  const { setValue, getValues, control, formState } = useFormContext<FormValues>();
+  const { setValue, getValues, control } = useFormContext<FormValues>();
   const assignRRMembersUsingSegment = getValues("assignRRMembersUsingSegment");
   
-  // CRITICAL: Use local state instead of useWatch to prevent re-renders on unrelated form changes
-  // useWatch subscribes to ALL form state changes, causing re-renders when typing in ANY input
-  // We manage hostGroups locally since it's only modified by user actions in this component
-  const [hostGroups, setHostGroups] = useState<{ id: string; name: string }[]>(
-    getValues("hostGroups") || []
-  );
-  
-  // Sync local state with form when needed (external updates)
-  useEffect(() => {
-    const formHostGroups = getValues("hostGroups") || [];
-    if (!isEqual(formHostGroups, hostGroups)) {
-      setHostGroups(formHostGroups);
-    }
-  }, [formState.dirtyFields.hostGroups]); // Only sync when hostGroups field is actually dirtied
+  // CRITICAL: Do NOT use formState - it creates a subscription that triggers re-renders on ALL form changes
+  // Use getValues() to read current state without subscribing - it doesn't cause re-renders
+  const hostGroups = getValues("hostGroups") || [];
   
   // rrSegmentQueryValue only needed for EditWeights dialog (infrequent operation)
   const rrSegmentQueryValue = getValues("rrSegmentQueryValue");
@@ -363,7 +352,6 @@ const RoundRobinHosts = memo(function RoundRobinHosts({
       const secondGroup = { id: uuidv4(), name: "" };
       const updatedHostGroups = [firstGroup, secondGroup];
       setValue("hostGroups", updatedHostGroups, { shouldDirty: true });
-      setHostGroups(updatedHostGroups); // Update local state for immediate UI update
 
       const updatedRRHosts = currentRRHosts.map((host) => {
         if (!host.groupId && !host.isFixed) {
@@ -377,7 +365,6 @@ const RoundRobinHosts = memo(function RoundRobinHosts({
       const newGroup = { id: uuidv4(), name: "" };
       const updatedHostGroups = [...hostGroups, newGroup];
       setValue("hostGroups", updatedHostGroups, { shouldDirty: true });
-      setHostGroups(updatedHostGroups); // Update local state for immediate UI update
     }
 
     // Disable 'Add all team members' switch if enabled
@@ -392,7 +379,6 @@ const RoundRobinHosts = memo(function RoundRobinHosts({
       const updatedHostGroups =
         hostGroups?.map((g) => (g.id === groupId ? { ...g, name: newName } : g)) || [];
       setValue("hostGroups", updatedHostGroups, { shouldDirty: true });
-      setHostGroups(updatedHostGroups); // Update local state for immediate UI update
     },
     [hostGroups, setValue]
   );
@@ -402,7 +388,6 @@ const RoundRobinHosts = memo(function RoundRobinHosts({
       // Remove the group from hostGroups
       const updatedHostGroups = hostGroups?.filter((g) => g.id !== groupId) || [];
       setValue("hostGroups", updatedHostGroups, { shouldDirty: true });
-      setHostGroups(updatedHostGroups); // Update local state for immediate UI update
 
       // Remove all hosts that belong to this group
       const updatedHosts = value.filter((host) => host.groupId !== groupId);
@@ -658,18 +643,18 @@ const Hosts = memo(function Hosts({
     control,
     setValue,
     getValues,
-    formState: { submitCount },
   } = useFormContext<FormValues>();
+  
+  // CRITICAL: Removed formState.submitCount - it was creating a subscription causing re-renders
   const initialValue = useRef<{
     hosts: FormValues["hosts"];
     schedulingType: SchedulingType | null;
-    submitCount: number;
   } | null>(null);
 
   useEffect(() => {
-    // Handles init & out of date initial value after submission.
-    if (!initialValue.current || initialValue.current?.submitCount !== submitCount) {
-      initialValue.current = { hosts: getValues("hosts"), schedulingType, submitCount };
+    // Handles init - simplified without submitCount tracking
+    if (!initialValue.current) {
+      initialValue.current = { hosts: getValues("hosts"), schedulingType };
       return;
     }
     setValue(
