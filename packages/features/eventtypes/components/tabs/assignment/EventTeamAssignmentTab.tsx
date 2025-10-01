@@ -662,7 +662,7 @@ const Hosts = memo(function Hosts({
       initialValue.current.schedulingType === schedulingType ? initialValue.current.hosts : [],
       { shouldDirty: true }
     );
-  }, [schedulingType, setValue, getValues, submitCount]);
+  }, [schedulingType, setValue, getValues]);
 
   // To ensure existing host do not loose its scheduleId and groupId properties, whenever a new host of same type is added.
   // This is because the host is created from list option in CheckedHostField component.
@@ -848,7 +848,12 @@ export const EventTeamAssignmentTab = ({
     }
   }, []);
 
-  console.log("[EventTeamAssignmentTab] RENDER - Parent component is re-rendering");
+  console.log("[EventTeamAssignmentTab] RENDER - Parent component is re-rendering", {
+    team: team.id,
+    teamMembersLength: teamMembers.length,
+    eventTypeId: eventType.id,
+    schedulingType: eventType.schedulingType
+  });
 
   return (
     <div>
