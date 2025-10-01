@@ -816,6 +816,10 @@ export const EventTeamAssignmentTab = memo(({
   );
   const isManagedEventType = eventType.schedulingType === SchedulingType.MANAGED;
   const { getValues, setValue, control } = useFormContext<FormValues>();
+  
+  // CRITICAL: Read schedulingType directly without Controller to avoid subscription
+  const currentSchedulingType = getValues("schedulingType");
+  
   const [assignAllTeamMembers, setAssignAllTeamMembers] = useState<boolean>(
     getValues("assignAllTeamMembers") ?? false
   );
@@ -902,30 +906,26 @@ export const EventTeamAssignmentTab = memo(({
               />
             </div>
           </div>
-          <Controller<FormValues>
-            name="schedulingType"
-            render={({ field: { value: schedulingType } }) => (
-              <>
-                {schedulingType === "ROUND_ROBIN" && (
-                  <RoundRobinSection 
-                    t={t} 
-                    eventType={eventType}
-                    handleMaxLeadThresholdChange={handleMaxLeadThresholdChange}
-                  />
-                )}
-                <Hosts
-                  orgId={orgId}
-                  isSegmentApplicable={isSegmentApplicable}
-                  teamId={team.id}
-                  assignAllTeamMembers={assignAllTeamMembers}
-                  setAssignAllTeamMembers={setAssignAllTeamMembers}
-                  teamMembers={teamMembersOptions}
-                  customClassNames={customClassNames?.hosts}
-                  schedulingType={schedulingType}
-                />
-              </>
+          {/* CRITICAL: No Controller here - use getValues() to avoid subscription */}
+          <>
+            {currentSchedulingType === "ROUND_ROBIN" && (
+              <RoundRobinSection 
+                t={t} 
+                eventType={eventType}
+                handleMaxLeadThresholdChange={handleMaxLeadThresholdChange}
+              />
             )}
-          />
+            <Hosts
+              orgId={orgId}
+              isSegmentApplicable={isSegmentApplicable}
+              teamId={team.id}
+              assignAllTeamMembers={assignAllTeamMembers}
+              setAssignAllTeamMembers={setAssignAllTeamMembers}
+              teamMembers={teamMembersOptions}
+              customClassNames={customClassNames?.hosts}
+              schedulingType={currentSchedulingType}
+            />
+          </>
         </>
       )}
       {team && isManagedEventType && (
