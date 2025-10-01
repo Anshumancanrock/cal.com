@@ -911,6 +911,7 @@ export const EventTeamAssignmentTab = memo(({
                 rrTimestampBasis={eventType.team?.rrTimestampBasis}
                 handleMaxLeadThresholdChange={handleMaxLeadThresholdChange}
                 getValues={getValues}
+                control={control}
               />
             )}
             <Hosts

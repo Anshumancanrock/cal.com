@@ -1,4 +1,4 @@
-import { useFormContext, Controller } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import { memo } from "react";
 import type { FormValues } from "@calcom/features/eventtypes/lib/types";
 import { Label } from "@calcom/ui/components/form";
@@ -6,13 +6,14 @@ import { RadioAreaGroup as RadioArea } from "@calcom/ui/components/radio";
 import { SettingsToggle } from "@calcom/ui/components/form";
 import { Tooltip } from "@calcom/ui/components/tooltip";
 import { RRTimestampBasis } from "@calcom/prisma/enums";
-import type { UseFormGetValues } from "react-hook-form";
+import type { UseFormGetValues, Control } from "react-hook-form";
 
 interface RoundRobinSectionProps {
   t: (key: string) => string;
   rrTimestampBasis: RRTimestampBasis | null | undefined;
   handleMaxLeadThresholdChange: (val: string, onChange: (value: number | null) => void) => void;
   getValues: UseFormGetValues<FormValues>;
+  control: Control<FormValues>;
 }
 
 /**
@@ -26,8 +27,9 @@ interface RoundRobinSectionProps {
  * It does NOT re-render when hostGroups or any nested fields change,
  * which is exactly what we need to prevent focus loss in the attributes filter.
  */
-const RoundRobinSection = memo(({ t, rrTimestampBasis, handleMaxLeadThresholdChange, getValues }: RoundRobinSectionProps) => {
-  const { control } = useFormContext<FormValues>();
+const RoundRobinSection = memo(({ t, rrTimestampBasis, handleMaxLeadThresholdChange, getValues, control }: RoundRobinSectionProps) => {
+  // CRITICAL: NO useFormContext() call here! All form methods passed as props to avoid Context subscription!
+  // This component should NOT re-render when typing in attributes filter!
   
   console.log("[RoundRobinSection] RENDER - This should NOT log when typing in attributes filter");
 
