@@ -30,8 +30,6 @@ interface RoundRobinSectionProps {
 const RoundRobinSection = memo(({ t, rrTimestampBasis, handleMaxLeadThresholdChange, getValues, control }: RoundRobinSectionProps) => {
   // CRITICAL: NO useFormContext() call here! All form methods passed as props to avoid Context subscription!
   // This component should NOT re-render when typing in attributes filter!
-  
-  console.log("[RoundRobinSection] RENDER - This should NOT log when typing in attributes filter");
 
   return (
     <div className="border-subtle mt-4 flex flex-col rounded-md">
@@ -118,13 +116,6 @@ const RoundRobinSection = memo(({ t, rrTimestampBasis, handleMaxLeadThresholdCha
 // This prevents re-renders when parent passes new eventType object with same value
 (prevProps, nextProps) => {
   const same = prevProps.rrTimestampBasis === nextProps.rrTimestampBasis;
-  
-  if (!same) {
-    console.log("[RoundRobinSection memo] rrTimestampBasis changed:", {
-      prev: prevProps.rrTimestampBasis,
-      next: nextProps.rrTimestampBasis
-    });
-  }
   
   return same;
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { Query, Builder, Utils as QbUtils } from "react-awesome-query-builder";
 import type { ImmutableTree, BuilderProps } from "react-awesome-query-builder";
 import type { JsonTree } from "react-awesome-query-builder";
@@ -41,18 +41,6 @@ function SegmentWithAttributes({
   onQueryValueChange: ({ queryValue }: { queryValue: AttributesQueryValue }) => void;
   className?: string;
 }) {
-  console.log("[SegmentWithAttributes] RENDER - Segment component is re-rendering");
-  
-  // Internal state for immediate updates to prevent parent re-renders on every keystroke
-  const [queryValue, setQueryValue] = useState(queryValueProp);
-  
-  // Sync with prop when it changes externally (but not from our own updates)
-  useEffect(() => {
-    if (!isEqual(queryValueProp, queryValue)) {
-      setQueryValue(queryValueProp);
-    }
-  }, [queryValueProp]); // Only depend on prop, not queryValue to avoid loops
-  
   // Memoize the config to prevent unnecessary re-creations
   const attributesQueryBuilderConfig = useMemo(() => getQueryBuilderConfigForAttributes({
     attributes,
@@ -63,11 +51,56 @@ function SegmentWithAttributes({
     configFor: ConfigFor.Attributes,
   }), [attributesQueryBuilderConfig]);
 
-  // Memoize the query builder data to prevent re-calculation on every render
-  const queryBuilderData = useMemo(() => buildStateFromQueryValue({
-    queryValue: queryValue as JsonTree,
-    config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
-  }), [queryValue, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
+  const initialState = useMemo(
+    () =>
+      buildStateFromQueryValue({
+        queryValue: queryValueProp as JsonTree,
+        config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+      }),
+    [queryValueProp, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]
+  );
+
+  const [queryTree, setQueryTree] = useState<ImmutableTree>(initialState.state.tree);
+  const [queryValue, setQueryValue] = useState<AttributesQueryValue | null>(
+    (initialState.queryValue as AttributesQueryValue) ?? null
+  );
+
+  const processedValueRef = useRef<AttributesQueryValue | null>(
+    (initialState.queryValue as AttributesQueryValue) ?? null
+  );
+  const pendingExternalSyncRef = useRef(false);
+  const configRef = useRef(attributesQueryBuilderConfigWithRaqbSettingsAndWidgets);
+
+  useEffect(() => {
+    const configChanged = configRef.current !== attributesQueryBuilderConfigWithRaqbSettingsAndWidgets;
+
+    if (configChanged) {
+      configRef.current = attributesQueryBuilderConfigWithRaqbSettingsAndWidgets;
+    }
+
+    if (pendingExternalSyncRef.current) {
+      if (!configChanged && isEqual(queryValueProp, processedValueRef.current)) {
+        pendingExternalSyncRef.current = false;
+      }
+      if (!configChanged) {
+        return;
+      }
+    }
+
+    if (configChanged || !isEqual(queryValueProp, processedValueRef.current)) {
+      const nextState = buildStateFromQueryValue({
+        queryValue: queryValueProp as JsonTree,
+        config: attributesQueryBuilderConfigWithRaqbSettingsAndWidgets,
+      });
+      const nextTree = nextState.state.tree;
+      const nextValue = (nextState.queryValue as AttributesQueryValue) ?? null;
+
+      setQueryTree(nextTree);
+      setQueryValue(nextValue);
+      processedValueRef.current = nextValue;
+      pendingExternalSyncRef.current = false;
+    }
+  }, [queryValueProp, attributesQueryBuilderConfigWithRaqbSettingsAndWidgets]);
 
   const renderBuilder = useCallback(
     (props: BuilderProps) => (
@@ -80,17 +113,24 @@ function SegmentWithAttributes({
     []
   );
 
-  const onChange = useCallback((immutableTree: ImmutableTree) => {
-    const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
+  const onChange = useCallback(
+    (immutableTree: ImmutableTree) => {
+      const jsonTree = QbUtils.getTree(immutableTree) as AttributesQueryValue;
 
-    // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. isEqual ensures that we don't end up having infinite re-renders.
-    if (!isEqual(jsonTree, queryValue)) {
-      setQueryValue(jsonTree);
-      onQueryValueChange({
-        queryValue: jsonTree,
-      });
-    }
-  }, [queryValue, onQueryValueChange]);
+      setQueryTree(immutableTree);
+
+      // IMPORTANT: RAQB calls onChange even without explicit user action. It just identifies if the props have changed or not. isEqual ensures that we don't end up having infinite re-renders.
+      if (!isEqual(jsonTree, processedValueRef.current)) {
+        setQueryValue(jsonTree);
+        processedValueRef.current = jsonTree;
+        pendingExternalSyncRef.current = true;
+        onQueryValueChange({
+          queryValue: jsonTree,
+        });
+      }
+    },
+    [onQueryValueChange]
+  );
 
   return (
     // cal-query-builder class has special styling through global CSS, allowing us to customize RAQB
@@ -98,7 +138,7 @@ function SegmentWithAttributes({
       <div className={cn("cal-query-builder", className)}>
         <Query
           {...attributesQueryBuilderConfigWithRaqbSettingsAndWidgets}
-          value={queryBuilderData.state.tree}
+          value={queryTree}
           onChange={onChange}
           renderBuilder={renderBuilder}
           key="attributes-query-builder"
