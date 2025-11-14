@@ -2,7 +2,7 @@
 
 import { revalidateSettingsGeneral } from "app/(use-page-wrapper)/settings/(settings-layout)/my-account/general/actions";
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { TimezoneSelect } from "@calcom/features/components/timezone-select";
@@ -135,6 +135,20 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
     getValues,
   } = formMethods;
   const isDisabled = isSubmitting || !isDirty;
+
+  // Update timeFormat label when language changes (after form submission)
+  useEffect(() => {
+    const currentValues = getValues();
+    const currentTimeFormatOption = timeFormatOptions.find(
+      (option) => option.value === currentValues.timeFormat.value
+    );
+    if (currentTimeFormatOption) {
+      formMethods.setValue("timeFormat", {
+        value: currentValues.timeFormat.value,
+        label: currentTimeFormatOption.label,
+      }, { shouldDirty: false });
+    }
+  }, [language, timeFormatOptions, getValues, formMethods]);
 
   const [isAllowDynamicBookingChecked, setIsAllowDynamicBookingChecked] = useState(
     !!user.allowDynamicBooking
