@@ -4,7 +4,6 @@ import { TimezoneSelect } from "@calcom/features/components/timezone-select";
 import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
 import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
 import { formatLocalizedDateTime } from "@calcom/lib/dayjs";
-import { getLocaleDefaults } from "@calcom/lib/getLocaleDefaults";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { localeOptions } from "@calcom/lib/i18n";
 import { nameOfDay } from "@calcom/lib/weekday";
@@ -148,6 +147,8 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
   );
 
   const watchedTzSchedules = formMethods.watch("travelSchedules");
+  const watchedTimeFormat = formMethods.watch("timeFormat");
+  const watchedWeekStart = formMethods.watch("weekStart");
 
   return (
     <SettingsHeader title={t("general")} description={t("general_description")} borderInShellHeader={true}>
@@ -166,6 +167,7 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
           <div className="border-subtle border-x border-y-0 px-4 py-8 sm:px-6">
             <Controller
               name="locale"
+              control={formMethods.control}
               render={({ field: { value, onChange } }) => (
                 <>
                   <Label className="text-emphasis">
@@ -178,14 +180,26 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
                     onChange={(newLocale) => {
                       onChange(newLocale);
                       if (newLocale) {
-                        // Apply locale-specific defaults for time format and week start
-                        const defaults = getLocaleDefaults(newLocale.value);
-                        const newTimeFormatOption = timeFormatOptions.find(
-                          (opt) => opt.value === defaults.timeFormat
-                        );
-                        const newWeekStartOption = weekStartOptions.find(
-                          (opt) => opt.value === defaults.weekStart
-                        );
+                        // Detect locale-specific time format (12h vs 24h)
+                        const formatted = new Intl.DateTimeFormat(newLocale.value, { hour: "numeric" }).format(new Date());
+                        const timeFormat = /AM|PM/i.test(formatted) ? 12 : 24;
+
+                        // Detect locale-specific week start
+                        let weekStart = "Sunday";
+                        try {
+                          const locale = new Intl.Locale(newLocale.value);
+                          const weekInfo = (locale as any).weekInfo ?? (locale as any).getWeekInfo?.();
+                          if (weekInfo?.firstDay) {
+                            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                            weekStart = days[weekInfo.firstDay === 7 ? 0 : weekInfo.firstDay];
+                          }
+                        } catch {
+                          // Intl.Locale not supported, use default Sunday
+                        }
+
+                        const newTimeFormatOption = timeFormatOptions.find((opt) => opt.value === timeFormat);
+                        const newWeekStartOption = weekStartOptions.find((opt) => opt.value === weekStart);
+
                         if (newTimeFormatOption) {
                           formMethods.setValue("timeFormat", newTimeFormatOption, { shouldDirty: true });
                         }
@@ -278,45 +292,33 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
               </div>
             )}
 
-            <Controller
-              name="timeFormat"
-              control={formMethods.control}
-              render={({ field: { value } }) => (
-                <>
-                  <Label className="text-emphasis mt-6">
-                    <>{t("time_format")}</>
-                  </Label>
-                  <Select
-                    value={value}
-                    options={timeFormatOptions}
-                    onChange={(event) => {
-                      if (event) formMethods.setValue("timeFormat", { ...event }, { shouldDirty: true });
-                    }}
-                  />
-                </>
-              )}
-            />
+            <>
+              <Label className="text-emphasis mt-6">
+                <>{t("time_format")}</>
+              </Label>
+              <Select
+                value={timeFormatOptions.find((opt) => opt.value === watchedTimeFormat?.value)}
+                options={timeFormatOptions}
+                onChange={(event) => {
+                  if (event) formMethods.setValue("timeFormat", { ...event }, { shouldDirty: true });
+                }}
+              />
+            </>
             <div className="text-gray text-subtle mt-2 flex items-center text-xs">
               {t("timeformat_profile_hint")}
             </div>
-            <Controller
-              name="weekStart"
-              control={formMethods.control}
-              render={({ field: { value } }) => (
-                <>
-                  <Label className="text-emphasis mt-6">
-                    <>{t("start_of_week")}</>
-                  </Label>
-                  <Select
-                    value={value}
-                    options={weekStartOptions}
-                    onChange={(event) => {
-                      if (event) formMethods.setValue("weekStart", { ...event }, { shouldDirty: true });
-                    }}
-                  />
-                </>
-              )}
-            />
+            <>
+              <Label className="text-emphasis mt-6">
+                <>{t("start_of_week")}</>
+              </Label>
+              <Select
+                value={weekStartOptions.find((opt) => opt.value === watchedWeekStart?.value)}
+                options={weekStartOptions}
+                onChange={(event) => {
+                  if (event) formMethods.setValue("weekStart", { ...event }, { shouldDirty: true });
+                }}
+              />
+            </>
           </div>
 
           <SectionBottomActions align="end">
