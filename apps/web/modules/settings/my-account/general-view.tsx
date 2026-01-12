@@ -1,14 +1,10 @@
 "use client";
 
-import { revalidateSettingsGeneral } from "app/(use-page-wrapper)/settings/(settings-layout)/my-account/general/actions";
-import { useSession } from "next-auth/react";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-
 import { TimezoneSelect } from "@calcom/features/components/timezone-select";
-import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
 import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
+import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
 import { formatLocalizedDateTime } from "@calcom/lib/dayjs";
+import { getLocaleDefaults } from "@calcom/lib/getLocaleDefaults";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { localeOptions } from "@calcom/lib/i18n";
 import { nameOfDay } from "@calcom/lib/weekday";
@@ -16,14 +12,14 @@ import type { RouterOutputs } from "@calcom/trpc/react";
 import { trpc } from "@calcom/trpc/react";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
-import { Form } from "@calcom/ui/components/form";
-import { Label } from "@calcom/ui/components/form";
-import { Select } from "@calcom/ui/components/form";
-import { SettingsToggle } from "@calcom/ui/components/form";
+import { Form, Label, Select, SettingsToggle } from "@calcom/ui/components/form";
 import { showToast } from "@calcom/ui/components/toast";
 import { revalidateTravelSchedules } from "@calcom/web/app/cache/travelSchedule";
-
 import TravelScheduleModal from "@components/settings/TravelScheduleModal";
+import { revalidateSettingsGeneral } from "app/(use-page-wrapper)/settings/(settings-layout)/my-account/general/actions";
+import { useSession } from "next-auth/react";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 
 export type FormValues = {
   locale: {
@@ -179,7 +175,25 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
                     className="capitalize"
                     options={localeOptions}
                     value={value}
-                    onChange={onChange}
+                    onChange={(newLocale) => {
+                      onChange(newLocale);
+                      if (newLocale) {
+                        // Apply locale-specific defaults for time format and week start
+                        const defaults = getLocaleDefaults(newLocale.value);
+                        const newTimeFormatOption = timeFormatOptions.find(
+                          (opt) => opt.value === defaults.timeFormat
+                        );
+                        const newWeekStartOption = weekStartOptions.find(
+                          (opt) => opt.value === defaults.weekStart
+                        );
+                        if (newTimeFormatOption) {
+                          formMethods.setValue("timeFormat", newTimeFormatOption, { shouldDirty: true });
+                        }
+                        if (newWeekStartOption) {
+                          formMethods.setValue("weekStart", newWeekStartOption, { shouldDirty: true });
+                        }
+                      }
+                    }}
                   />
                 </>
               )}
