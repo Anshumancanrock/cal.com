@@ -75,14 +75,13 @@ type DoInIframeArg = {
   };
 }[keyof typeof interfaceWithParent];
 
-// Initialize window.Cal if it doesn't exist (e.g., when embed.js is loaded directly without the snippet)
+// Initialize window.Cal if it doesn't exist
 if (!window.Cal) {
   console.warn(
     "Cal: embed.js loaded without the Cal snippet. For optimal performance, use the embed snippet from https://cal.com/embed. Initializing with defaults."
   );
   window.Cal = function () {
     const cal = window.Cal;
-    // @ts-expect-error - arguments is not typed
     const ar = arguments;
     cal.q = cal.q || [];
     cal.q.push(ar);
