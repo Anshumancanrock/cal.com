@@ -75,6 +75,23 @@ type DoInIframeArg = {
   };
 }[keyof typeof interfaceWithParent];
 
+// Initialize window.Cal if it doesn't exist (e.g., when embed.js is loaded directly without the snippet)
+if (!window.Cal) {
+  console.warn(
+    "Cal: embed.js loaded without the Cal snippet. For optimal performance, use the embed snippet from https://cal.com/embed. Initializing with defaults."
+  );
+  window.Cal = function () {
+    const cal = window.Cal;
+    // @ts-expect-error - arguments is not typed
+    const ar = arguments;
+    cal.q = cal.q || [];
+    cal.q.push(ar);
+  } as GlobalCal;
+  window.Cal.ns = {};
+  window.Cal.q = [];
+  window.Cal.loaded = true;
+}
+
 const globalCal = window.Cal;
 if (!globalCal || !globalCal.q) {
   throw new Error("Cal is not defined. This shouldn't happen");
